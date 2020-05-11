@@ -3,6 +3,15 @@ PUT http://localhost:8080/change HTTP/1.1
 Content-Type: application/json
 
 {
-    "number": "100000",
-    "mobilephone": "12355556666",
+    "id": "100000",
+    "content": "测试数据"
+}
+
+###
+PUT http://localhost:8080/change HTTP/1.1
+Content-Type: application/json
+
+{
+    "id": "100001",
+    "content": "复仇者"
 }

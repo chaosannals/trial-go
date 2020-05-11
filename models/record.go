@@ -22,6 +22,11 @@ func Change(id string, data types.DocData, force ...bool) {
 	searcher.Flush()
 }
 
+func Remove(id string) {
+	searcher.RemoveDoc(id, true)
+	searcher.Flush()
+}
+
 func Search(request types.SearchReq) types.SearchResp {
 	return searcher.Search(request)
 }

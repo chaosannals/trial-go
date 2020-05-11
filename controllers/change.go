@@ -1,20 +1,27 @@
 package controllers
 
 import (
+	"github.com/chaosannals/trial-go/models"
 	"github.com/gin-gonic/gin"
 	"github.com/go-ego/riot/types"
-	"github.com/chaosannals/trial-go/models"
 )
 
+type ChangeRequestParam struct {
+	Id      string `json:"id"`
+	Content string `json:"content"`
+}
+
 func Change(c *gin.Context) {
-	text := "《复仇者联盟3：无限战争》是全片使用IMAX摄影机拍摄"
-	text1 := "在IMAX影院放映时"
-	text2 := "全片以上下扩展至IMAX 1.9：1的宽高比来呈现"
-	// 将文档加入索引，docId 从1开始
-	models.Change("1", types.DocData{Content: text})
-	models.Change("2", types.DocData{Content: text1}, false)
-	models.Change("3", types.DocData{Content: text2}, true)
-	c.JSON(200, gin.H{
-		"message": "pong",
-	})
+	var param ChangeRequestParam
+	var e = c.BindJSON(&param)
+	if e == nil {
+		models.Change(param.Id, types.DocData{Content: param.Content}, true)
+		c.JSON(200, gin.H{
+			"message": "ok",
+		})
+	} else {
+		c.JSON(400, gin.H{
+			"message": e.Error(),
+		})
+	}
 }
