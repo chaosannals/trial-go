@@ -13,15 +13,13 @@ type ChangeRequestParam struct {
 
 func Change(c *gin.Context) {
 	var param ChangeRequestParam
-	var e = c.BindJSON(&param)
-	if e == nil {
-		models.Change(param.Id, types.DocData{Content: param.Content}, true)
-		c.JSON(200, gin.H{
-			"message": "ok",
-		})
-	} else {
+	if e := c.BindJSON(&param); e != nil {
 		c.JSON(400, gin.H{
 			"message": e.Error(),
 		})
 	}
+	models.Change(param.Id, types.DocData{Content: param.Content}, true)
+	c.JSON(200, gin.H{
+		"message": "ok",
+	})
 }

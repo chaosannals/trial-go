@@ -11,6 +11,8 @@ func Init() func() {
 	searcher.Init(types.EngineOpts{
 		Using:   3,
 		GseDict: "zh",
+		UseStore: true,
+		StoreFolder: "data",
 	})
 	return func() {
 		searcher.Close()
