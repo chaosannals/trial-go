@@ -1,49 +1,60 @@
 package logics
 
 import (
+	"fmt"
+	"github.com/chaosannals/trial-go/models"
 	"github.com/go-ego/riot"
 	"github.com/go-ego/riot/types"
-	"os"
-	"path/filepath"
-	"strings"
+	"github.com/jinzhu/gorm"
+	"github.com/satori/go.uuid"
 )
 
-var searcher = riot.Engine{}
+var db *gorm.DB = nil
+var title *riot.Engine = nil
+var content *riot.Engine = nil
 
-// 获取字典路径
-func getDictPath() string {
-	result := make([]string, 2)
-	root := filepath.Dir(os.Args[0])
-	primary := filepath.Join(root, "dictionary.txt")
-	if _, e := os.Stat(primary); e == nil || os.IsExist(e) {
-		result = append(result, primary)
-	}
-	result = append(result, "zh")
-	return strings.Join(result, ",")
+//Init 初始化
+func Init() {
+	db = models.InitStore()
+	title = models.AdpotIndex("title")
+	content = models.AdpotIndex("content")
 }
 
-func Init() func() {
-	searcher.Init(types.EngineOpts{
-		Using:       3,
-		GseDict:     getDictPath(),
-		UseStore:    true,
-		StoreFolder: "data",
-	})
-	return func() {
-		searcher.Close()
-	}
+//Recover 回收资源
+func Recover() {
+	title.Close()
+	content.Close()
 }
 
-func Change(id string, data types.DocData, force ...bool) {
-	searcher.Index(id, data, force...)
-	searcher.Flush()
+//Insert 插入
+func Insert(data models.Store) *gorm.DB {
+	data.ID = uuid.NewV1().String()
+	title.Index(data.ID, types.DocData{Content: data.Title}, false)
+	title.Flush()
+	content.Index(data.ID, types.DocData{Content: data.Content}, false)
+	content.Flush()
+	return db.Create(&data)
 }
 
+//Update 修改
+func Update(data models.Store) *gorm.DB {
+	title.Index(data.ID, types.DocData{Content: data.Title}, true)
+	title.Flush()
+	content.Index(data.ID, types.DocData{Content: data.Content}, true)
+	content.Flush()
+	return db.Save(&data)
+}
+
+//Remove 删除
 func Remove(id string) {
-	searcher.RemoveDoc(id, true)
-	searcher.Flush()
+	db.Unscoped().Where(fmt.Sprintf("ID = %s", id)).Delete(&models.Store{})
+	title.RemoveDoc(id, true)
+	title.Flush()
+	content.RemoveDoc(id, true)
+	content.Flush()
 }
 
+//Search 搜索
 func Search(request types.SearchReq) types.SearchResp {
-	return searcher.Search(request)
+	return content.Search(request)
 }

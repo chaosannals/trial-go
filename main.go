@@ -1,20 +1,23 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/chaosannals/trial-go/controllers"
 	"github.com/chaosannals/trial-go/logics"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	rd := logics.Init()
+	logics.Init()
 
-	defer rd()
+	defer logics.Recover()
 
 	r := gin.Default()
-	r.PUT("/change", controllers.Change)
+	
+	r.PUT("/insert", controllers.Insert)
 	r.GET("/search", controllers.Search)
+	r.POST("/update", controllers.Update)
 	r.DELETE("/remove", controllers.Remove)
+	r.POST("/reword", controllers.Reword)
 
 	r.Run()
 }
