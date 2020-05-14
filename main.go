@@ -3,11 +3,13 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/chaosannals/trial-go/controllers"
-	"github.com/chaosannals/trial-go/models"
+	"github.com/chaosannals/trial-go/logics"
 )
 
 func main() {
-	defer models.Init()()
+	rd := logics.Init()
+
+	defer rd()
 
 	r := gin.Default()
 	r.PUT("/change", controllers.Change)

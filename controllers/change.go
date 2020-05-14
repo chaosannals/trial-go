@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/chaosannals/trial-go/models"
+	"github.com/chaosannals/trial-go/logics"
 	"github.com/gin-gonic/gin"
 	"github.com/go-ego/riot/types"
 )
@@ -18,7 +18,7 @@ func Change(c *gin.Context) {
 			"message": e.Error(),
 		})
 	}
-	models.Change(param.Id, types.DocData{Content: param.Content}, true)
+	logics.Change(param.Id, types.DocData{Content: param.Content}, true)
 	c.JSON(200, gin.H{
 		"message": "ok",
 	})

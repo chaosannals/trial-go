@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/chaosannals/trial-go/models"
+	"github.com/chaosannals/trial-go/logics"
 	"github.com/gin-gonic/gin"
 	"github.com/go-ego/riot/types"
 )
@@ -18,6 +18,6 @@ func Search(c *gin.Context) {
 		})
 	}
 	c.JSON(200, gin.H{
-		"message": models.Search(types.SearchReq{Text: param.Text}),
+		"message": logics.Search(types.SearchReq{Text: param.Text}),
 	})
 }

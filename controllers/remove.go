@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"github.com/chaosannals/trial-go/models"
+	"github.com/chaosannals/trial-go/logics"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,7 +16,7 @@ func Remove(c *gin.Context) {
 			"message": e.Error(),
 		})
 	}
-	models.Remove(param.Id)
+	logics.Remove(param.Id)
 	c.JSON(200, gin.H{
 		"message": "ok",
 	})
