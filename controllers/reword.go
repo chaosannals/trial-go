@@ -6,7 +6,7 @@ import (
 
 //RewordRequestParam 重置索引 
 type RewordRequestParam struct {
-	ID string `json:id`
+	ID string `json:"id"`
 }
 
 //Reword 重置文档索引
