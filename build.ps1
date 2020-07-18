@@ -1,3 +1,4 @@
+
 if (!(Test-Path .\bin)) {
     mkdir .\bin
 }
