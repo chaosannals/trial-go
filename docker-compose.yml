@@ -1,0 +1,19 @@
+version: '3.8'
+
+services: 
+    webserver:
+        build:
+            context: ./webserver
+            dockerfile: dockerfile
+        container_name: trial-go-webserver
+        ports: 
+            - 8080:8080
+        environment: 
+            - GIN_MODE=release
+        networks: 
+            - trial-go-net
+
+networks: 
+    trial-go-net:
+        name: trial-go-net
+        driver: bridge
