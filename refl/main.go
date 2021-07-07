@@ -9,7 +9,6 @@ import (
 
 func main() {
 	p := library.Person{}
-	p.SayByPointer("aaaaaa")
 
 	t := reflect.TypeOf(p)
 	fmt.Println(t.Name())
@@ -23,7 +22,14 @@ func main() {
 	for i := 0; i < t.NumMethod(); i++ {
 		fmt.Println(t.Method(i).Name)
 	}
-	fmt.Println(t.MethodByName("SayByValue"))
+	m, b := t.MethodByName("SayByValue")
+	if b {
+		fmt.Println(m)
+		a := make([]reflect.Value, 2)
+		a[0] = reflect.ValueOf(p)
+		a[1] = reflect.ValueOf("bbbbbb")
+		m.Func.Call(a)
+	}
 
 	// ValueOf 得到 Value 类型后 Value 类型 的返回也大多是 Value 类型
 	v := reflect.ValueOf(p)
@@ -31,7 +37,11 @@ func main() {
 	for i := 0; i < v.NumMethod(); i++ {
 		fmt.Println(v.Method(i))
 	}
-	fmt.Println(v.MethodByName("SayByValue"))
+	vm := v.MethodByName("SayByValue")
+	a := make([]reflect.Value, 1)
+	a[0] = reflect.ValueOf("cccccc")
+	vm.Call(a)
+	fmt.Println(vm)
 
 	fmt.Println("--------------------------")
 	pp := &library.Person{}
