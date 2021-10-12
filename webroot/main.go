@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	d := filepath.Dir(os.Args[0])
 	if len(os.Args) > 1 {
