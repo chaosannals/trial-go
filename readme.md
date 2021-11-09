@@ -1,5 +1,12 @@
 # [trial-go](https://github.com/chaosannals/trial-go)
 
+## 命令
+
+```bash
+# 查看配置
+go env
+```
+
 ## Go 构建镜像
 
 ```sh
