@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <meta charset="utf-8" />
+    </head>
+    <body>
+        <script type="text/javascript" src="/wasm_exec.js"></script>
+        <script type="text/javascript" src="/demo.js"></script>
+        <script type="text/javascript">
+            async function main() {
+                var ts = new Date().getTime();
+                var data = await downloadJson(`/data.json?t=${ts}`);
+                window.JS_TO_WASM_DATA = data;
+                await runWasm(`/demo.wasm?t=${ts}`);
+            }
+            main();
+        </script>
+    </body>
+</html>
