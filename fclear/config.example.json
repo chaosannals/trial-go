@@ -1,0 +1,26 @@
+{
+    "mode": "once",
+    "tasks": [
+        {
+            "dir": "${wkdir}/../",
+            "validTime": "48h",
+            "exts": [
+                ".log"
+            ],
+            "alioss": "aaa_01"
+        }
+    ],
+    "alioss": [
+        {
+            "tag": "aaa_01",
+            "host": "",
+            "key": "",
+            "secret": "",
+            "bucket": "",
+            "endpoint": "",
+            "prefix": "",
+            "isStorageIA": true,
+            "isPrivate": true
+        }
+    ]
+}
