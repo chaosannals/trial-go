@@ -1,17 +1,18 @@
 package core
 
 import (
-	"os"
-	"time"
 	"io/ioutil"
-	"strings"
+	"os"
 	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/cihub/seelog"
 )
 
 type FClearTask struct {
-	config *FClearConfigTask
-	alioss *AliOssClient
+	config    *FClearConfigTask
+	alioss    *AliOssClient
 	timeLimit time.Time
 }
 
@@ -21,18 +22,19 @@ func RunTask(cfg *FClearConfigTask, ali *AliOssClient) error {
 	if err != nil {
 		return err
 	}
-	task := &FClearTask {
-		config: cfg,
-		alioss: ali,
-		timeLimit: now.Truncate(m),
+	tl := now.Add(-m)
+	task := &FClearTask{
+		config:    cfg,
+		alioss:    ali,
+		timeLimit: tl,
 	}
-	seelog.Infof("");
+	seelog.Infof("now: %s | m: %v | time limit: %s", now.Format("2006-01-02 15:04:05"), m, tl.Format("2006-01-02 15:04:05"))
 	return task.RunTaskOnDir(cfg.Dir)
 }
 
 func ValidExt(ext string, exts []string) bool {
 	c := len(exts)
-	for i := 0; i < c; i+=1 {
+	for i := 0; i < c; i += 1 {
 		if strings.EqualFold(exts[i], ext) {
 			return true
 		}
@@ -40,7 +42,7 @@ func ValidExt(ext string, exts []string) bool {
 	return false
 }
 
-func (i *FClearTask)Restore(p string) {
+func (i *FClearTask) Restore(p string) {
 	ossp := strings.Replace(strings.Trim(p[len(i.config.Dir):], "/\\"), "\\", "/", -1)
 	seelog.Infof("%s => %s", p, ossp)
 	err := i.alioss.PutFromFile(ossp, p)
@@ -54,7 +56,7 @@ func (i *FClearTask)Restore(p string) {
 	}
 }
 
-func (i *FClearTask)RunTaskOnDir(dir string) error {
+func (i *FClearTask) RunTaskOnDir(dir string) error {
 	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return err
@@ -70,7 +72,7 @@ func (i *FClearTask)RunTaskOnDir(dir string) error {
 				fi, err := os.Stat(p)
 				if err != nil {
 					seelog.Error(err)
-				}else {
+				} else {
 					mt := fi.ModTime()
 					d := i.timeLimit.Sub(mt).Seconds()
 					if d > 0 {

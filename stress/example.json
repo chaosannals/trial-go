@@ -1,0 +1,11 @@
+{
+    "scheme": "http",
+    "host": "127.0.0.1",
+    "port": 80,
+    "path": "",
+    "method": "POST",
+    "times": 100,
+    "body": {
+        "content": "${json($randomObject)}"
+    }
+}
