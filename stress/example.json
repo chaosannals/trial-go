@@ -4,8 +4,10 @@
     "port": 80,
     "path": "",
     "method": "POST",
+    "contentType": "application/json",
+    "acceptEncoding": "br",
     "times": 100,
     "body": {
-        "content": "${json($randomObject)}"
+        "content": "${json(randomObject())}"
     }
 }

@@ -12,6 +12,8 @@ type StressConfig struct {
 	Port   int
 	Method string
 	Path   string
+	ContentType string
+	AcceptEncoding string
 	Times  int
 	Body   interface{}
 }

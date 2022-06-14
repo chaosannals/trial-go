@@ -63,6 +63,7 @@ func main() {
 
 	app.Action = func(c *cli.Context) error {
 		cfgPath := c.String("conf")
+		// verbose := c.Bool("verbose")
 
 		if cfgPath == "" {
 			port, err := strconv.Atoi(c.String("port"))
@@ -80,7 +81,7 @@ func main() {
 			wkr.Request()
 		} else {
 			cfg, err := stress.LoadConfig(cfgPath)
-			fmt.Printf("load config: %s", cfgPath)
+			fmt.Printf("load config: %s\n", cfgPath)
 			if err != nil {
 				fmt.Printf("err: %v\n", err)
 			}

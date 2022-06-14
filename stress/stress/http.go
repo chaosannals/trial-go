@@ -8,6 +8,10 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/andybalholm/brotli"
+	"github.com/klauspost/compress/flate"
+	"github.com/klauspost/compress/gzip"
 )
 
 type HttpStressWorker struct {
@@ -45,10 +49,14 @@ func (self *HttpStressWorker) RequestPost() ([]byte, error) {
 		self.config.Port,
 		self.config.Path,
 	)
-	body, err := json.Marshal(self.config.Body)
+	rb := PreloadMake(self.config.Body)
+	// fmt.Printf("rb: %v\n", rb)
+
+	body, err := json.Marshal(rb)
 	if err != nil {
 		return nil, err
 	}
+
 	// fmt.Printf("body %s\n", string(body))
 	req, err := http.NewRequest(
 		"POST",
@@ -58,18 +66,59 @@ func (self *HttpStressWorker) RequestPost() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(self.config.AcceptEncoding) > 0 {
+		req.Header.Set("Accept-Encoding", self.config.AcceptEncoding)
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	res, err := self.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer res.Body.Close()
+	// data, err := ioutil.ReadAll(res.Body)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	if res.StatusCode >= 200 && res.StatusCode <= 299 {
+		switch self.config.AcceptEncoding {
+		case "br":
+			//fmt.Printf("start br: %v\n", string(data))
+			//n := len(data)
+			// b := bytes.NewReader(data)
+			// reader := brotli.NewReader(b)
+			reader := brotli.NewReader(res.Body)
+			return ioutil.ReadAll(reader)
+			// d, err := ioutil.ReadAll(reader)
+			// if err != nil {
+			// 	return nil, err
+			// }
+			// fmt.Printf("br: %d => %d\n", n, len(body))
+			// return d, nil
+		case "gzip":
+			reader, err := gzip.NewReader(res.Body)
+			if err != nil {
+				return nil, err
+			}
+			return ioutil.ReadAll(reader)
+		case "flate":
+			reader := flate.NewReader(res.Body)
+			return ioutil.ReadAll(reader)
+		default:
+			return ioutil.ReadAll(res.Body)
+		}
+		// return data, nil
+	}
+
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
 	}
-	// fmt.Printf("res body: %s", string(data))
-	return data, nil
+
+	fmt.Printf("res %d body: %s", res.StatusCode, string(data))
+	return data, fmt.Errorf("http response error: %d\n", res.StatusCode)
 }
 
 func (self *HttpStressWorker) Request() {
@@ -89,6 +138,9 @@ func (self *HttpStressWorker) Request() {
 				if err != nil {
 					fmt.Printf("no: %d err %v\n", j, err)
 				}
+				// else {
+				// 	fmt.Printf("data: %s", string(d))
+				// }
 				break
 			}
 			elapsed := time.Since(start)
