@@ -2,6 +2,7 @@ package stress
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,7 +23,13 @@ type HttpStressWorker struct {
 func NewHttpStressWorker(config *StressConfig) *HttpStressWorker {
 	return &HttpStressWorker{
 		config: config,
-		client: &http.Client{},
+		client: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		},
 	}
 }
 
@@ -49,6 +56,7 @@ func (self *HttpStressWorker) RequestPost() ([]byte, error) {
 		self.config.Port,
 		self.config.Path,
 	)
+
 	rb := PreloadMake(self.config.Body)
 	// fmt.Printf("rb: %v\n", rb)
 

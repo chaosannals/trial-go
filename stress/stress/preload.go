@@ -3,10 +3,15 @@ package stress
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 )
+
+var randCharset = []rune("1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM")
+var randMaxchar = len(randCharset) - 1
 
 type PreloadParser struct {
 	charIndex  int
@@ -21,6 +26,13 @@ func (self *PreloadParser) Parse() (interface{}, error) {
 }
 
 func (self *PreloadParser) matchExpression() (interface{}, error) {
+	c := self.peekChar()
+	if unicode.IsDigit(c) {
+		return self.matchNumber()
+	}
+	if c == '"' {
+		return self.matchString()
+	}
 	return self.matchFunctionCall()
 }
 
@@ -59,6 +71,33 @@ func (self *PreloadParser) matchFunctionCall() (interface{}, error) {
 	}
 }
 
+func (self *PreloadParser) matchNumber() (float64, error) {
+	buf := make([]rune, 0, 128)
+	for {
+		c := self.peekChar()
+		if c == '.' || unicode.IsDigit(c) {
+			self.popChar()
+			buf = append(buf, c)
+		} else {
+			break
+		}
+	}
+	return strconv.ParseFloat(string(buf), 64)
+}
+
+func (self *PreloadParser) matchString() (string, error) {
+	buf := make([]rune, 0, 128)
+	for {
+		c := self.peekChar()
+		if '"' == c {
+			break
+		}
+		self.popChar()
+		buf = append(buf, c)
+	}
+	return string(buf[1 : len(buf)-1]), nil
+}
+
 func (self *PreloadParser) matchIdentifier() string {
 	start := self.charIndex
 	for i := start; i < self.charCount; i++ {
@@ -93,9 +132,48 @@ func (self *PreloadParser) peekChar() rune {
 
 func (self *PreloadParser) RandomObject(_ interface{}) interface{} {
 	result := make(map[string]interface{})
-	result["test"] = "111111"
-	result["bbb"] = 1232
+	//fmt.Println("randomObject start")
+	fc := 6 + rand.Intn(20)
+	for i := 0; i < fc; i++ {
+		fn := self.RandomString(nil)
+		r := rand.Intn(100)
+		switch {
+		case r == 1:
+			result[fn] = self.RandomObject(nil)
+			break
+		case r > 1 && r <= 10:
+			result[fn] = rand.Float32()
+			break
+		case r > 10 && r <= 20:
+			result[fn] = self.RandomString(nil)
+			break
+		default:
+			result[fn] = rand.Intn(1000)
+			break
+		}
+	}
+	//fmt.Println("randomObject end")
 	return result
+}
+
+func (self *PreloadParser) RandomList(_ interface{}) interface{} {
+	lc := 20 + rand.Intn(100)
+	buf := make([]interface{}, 0, lc)
+	for i := 0; i < lc; i++ {
+		buf = append(buf, self.RandomObject(nil))
+	}
+	return buf
+}
+
+func (self *PreloadParser) RandomString(_ interface{}) string {
+	sb := strings.Builder{}
+	sn := rand.Intn(5) + 3
+	sb.Grow(sn)
+	for i := 0; i < sn; i++ {
+		ci := rand.Intn(randMaxchar)
+		sb.WriteRune(randCharset[ci])
+	}
+	return sb.String()
 }
 
 func (self *PreloadParser) Json(input interface{}) interface{} {
@@ -111,7 +189,8 @@ func (self *PreloadParser) Json(input interface{}) interface{} {
 func PreloadMake(data interface{}) interface{} {
 	rv := reflect.ValueOf(data)
 	rt := reflect.TypeOf(data)
-	if rt.Kind() == reflect.Map {
+	switch rt.Kind() {
+	case reflect.Map:
 		d := data.(map[string]interface{})
 		r := make(map[string]interface{})
 		for k, v := range d {
@@ -125,7 +204,9 @@ func PreloadMake(data interface{}) interface{} {
 			}
 		}
 		return r
-	} else {
+	case reflect.String:
+		return preloadParse(data.(string))
+	default:
 		// TODO
 		for i := 0; i < rt.NumField(); i += 1 {
 			v := rv.Field(i)
