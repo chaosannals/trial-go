@@ -30,12 +30,20 @@ func main() {
 		fmt.Printf("err: %v", err)
 		os.Exit(1)
 	}
-	box, err := ui.NewMainBox()
+
+	// box, err := ui.NewFyneBox()
+	// if err != nil {
+	// 	fmt.Printf("err: %v", err)
+	// 	os.Exit(1)
+	// }
+	// box.Run()
+
+	gbox, err := ui.NewGioBox()
 	if err != nil {
 		fmt.Printf("err: %v", err)
 		os.Exit(1)
 	}
-	box.Run()
+	gbox.Run()
 
 	// inReader := bufio.NewReader(os.Stdin)
 	//for {
