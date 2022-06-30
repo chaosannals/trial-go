@@ -17,10 +17,12 @@ type GioInput struct {
 }
 
 func NewGioInput() *GioInput {
-	return &GioInput{
+	r := &GioInput{
 		Invalid: false,
 		old:     "",
 	}
+	r.Submit = true
+	return r
 }
 
 func (ed *GioInput) Changed() bool {
@@ -47,24 +49,7 @@ func (ed *GioInput) Layout(th *material.Theme, gtx layout.Context) layout.Dimens
 		borderColor = color.NRGBA{R: 200, A: 0xFF}
 	}
 
-	// area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
-	// key.InputOp{
-	// 	Tag:  ed,
-	// 	Keys: key.NameEscape,
-	// }.Add(gtx.Ops)
-
-	// for _, e := range gtx.Events(ed) {
-	// 	fmt.Println(e)
-	// 	switch e := e.(type) {
-	// 	case key.Event:
-	// 		if e.Name == key.NameEnter {
-	// 			ed.SetText("")
-	// 		}
-	// 	}
-	// }
-
-	// draw an editor with a border.
-	r := widget.Border{
+	return widget.Border{
 		Color:        borderColor,
 		CornerRadius: unit.Dp(4),
 		Width:        unit.Dp(borderWidth),
@@ -72,8 +57,4 @@ func (ed *GioInput) Layout(th *material.Theme, gtx layout.Context) layout.Dimens
 		return layout.UniformInset(unit.Dp(4)).Layout(gtx,
 			material.Editor(th, &ed.Editor, "").Layout)
 	})
-
-	// area.Pop()
-
-	return r
 }

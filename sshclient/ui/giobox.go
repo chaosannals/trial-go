@@ -11,6 +11,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
+	"gioui.org/widget"
 	"gioui.org/widget/material"
 )
 
@@ -20,6 +21,8 @@ type GioBox struct {
 	title  *material.LabelStyle
 	input  *GioInput
 	output *GioOutput
+
+	OnInput func(cmd string)
 }
 
 func NewGioBox() (*GioBox, error) {
@@ -57,6 +60,14 @@ func (self *GioBox) runLoop() error {
 
 			self.title.Layout(gtx)
 
+			for _, e := range self.input.Events() {
+				switch e := e.(type) {
+				case widget.SubmitEvent:
+					self.OnInput(e.Text)
+					self.input.SetText("")
+				}
+			}
+
 			layout.Flex{
 				Axis:      layout.Vertical,
 				Alignment: layout.Middle,
@@ -83,4 +94,8 @@ func (self *GioBox) Run() {
 		os.Exit(0)
 	}()
 	app.Main()
+}
+
+func (self *GioBox) ToOutput(text string) {
+	self.output.AddText(text)
 }

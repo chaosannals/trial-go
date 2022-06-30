@@ -30,6 +30,11 @@ func (ed *GioOutput) SetText(s string) {
 	ed.Editor.SetText(s)
 }
 
+func (ed *GioOutput) AddText(s string) {
+	t := ed.old + s
+	ed.SetText(t)
+}
+
 func (ed *GioOutput) Layout(th *material.Theme, gtx layout.Context) layout.Dimensions {
 	// Determine colors based on the state of the editor.
 	borderWidth := float32(0.5)
@@ -42,7 +47,6 @@ func (ed *GioOutput) Layout(th *material.Theme, gtx layout.Context) layout.Dimen
 		// 	borderColor = color.NRGBA{R: 200, A: 0xFF}
 	}
 
-	// draw an editor with a border.
 	return widget.Border{
 		Color:        borderColor,
 		CornerRadius: unit.Dp(4),

@@ -43,6 +43,15 @@ func main() {
 		fmt.Printf("err: %v", err)
 		os.Exit(1)
 	}
+	gbox.OnInput = func(cmd string) {
+		msg, err := client.SendCmd(cmd)
+		if err != nil {
+			// fmt.Printf("err: %v", err)
+			gbox.ToOutput(fmt.Sprintf("err: %v", err))
+		}
+		gbox.ToOutput(msg)
+		// fmt.Printf("n: %s", msg)
+	}
 	gbox.Run()
 
 	// inReader := bufio.NewReader(os.Stdin)
