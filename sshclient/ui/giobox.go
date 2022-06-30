@@ -19,7 +19,7 @@ type GioBox struct {
 	theme  *material.Theme
 	title  *material.LabelStyle
 	input  *GioInput
-	output *GioInput
+	output *GioOutput
 }
 
 func NewGioBox() (*GioBox, error) {
@@ -32,7 +32,7 @@ func NewGioBox() (*GioBox, error) {
 	title.Alignment = text.Middle
 
 	input := NewGioInput()
-	output := NewGioInput()
+	output := NewGioOutput()
 	input.SingleLine = true
 
 	return &GioBox{
@@ -57,12 +57,15 @@ func (self *GioBox) runLoop() error {
 
 			self.title.Layout(gtx)
 
-			layout.Stack{}.Layout(gtx,
-				layout.Stacked(func(gtx layout.Context) layout.Dimensions {
-					return self.input.Layout(self.theme, gtx)
-				}),
-				layout.Stacked(func(gtx layout.Context) layout.Dimensions {
+			layout.Flex{
+				Axis:      layout.Vertical,
+				Alignment: layout.Middle,
+			}.Layout(gtx,
+				layout.Flexed(1, func(gtx layout.Context) layout.Dimensions {
 					return self.output.Layout(self.theme, gtx)
+				}),
+				layout.Rigid(func(gtx layout.Context) layout.Dimensions {
+					return self.input.Layout(self.theme, gtx)
 				}),
 			)
 

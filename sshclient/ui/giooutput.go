@@ -9,33 +9,28 @@ import (
 	"gioui.org/widget/material"
 )
 
-type GioInput struct {
+type GioOutput struct {
 	widget.Editor
-	Invalid bool
-
 	old string
 }
 
-func NewGioInput() *GioInput {
-	return &GioInput{
-		Invalid: false,
-		old:     "",
-	}
+func NewGioOutput() *GioOutput {
+	return &GioOutput{}
 }
 
-func (ed *GioInput) Changed() bool {
+func (ed *GioOutput) Changed() bool {
 	newText := ed.Editor.Text()
 	changed := newText != ed.old
 	ed.old = newText
 	return changed
 }
 
-func (ed *GioInput) SetText(s string) {
+func (ed *GioOutput) SetText(s string) {
 	ed.old = s
 	ed.Editor.SetText(s)
 }
 
-func (ed *GioInput) Layout(th *material.Theme, gtx layout.Context) layout.Dimensions {
+func (ed *GioOutput) Layout(th *material.Theme, gtx layout.Context) layout.Dimensions {
 	// Determine colors based on the state of the editor.
 	borderWidth := float32(0.5)
 	borderColor := color.NRGBA{A: 107}
@@ -43,28 +38,12 @@ func (ed *GioInput) Layout(th *material.Theme, gtx layout.Context) layout.Dimens
 	case ed.Editor.Focused():
 		borderColor = th.Palette.ContrastBg
 		borderWidth = 2
-	case ed.Invalid:
-		borderColor = color.NRGBA{R: 200, A: 0xFF}
+		// case ed.Invalid:
+		// 	borderColor = color.NRGBA{R: 200, A: 0xFF}
 	}
 
-	// area := clip.Rect{Max: gtx.Constraints.Max}.Push(gtx.Ops)
-	// key.InputOp{
-	// 	Tag:  ed,
-	// 	Keys: key.NameEscape,
-	// }.Add(gtx.Ops)
-
-	// for _, e := range gtx.Events(ed) {
-	// 	fmt.Println(e)
-	// 	switch e := e.(type) {
-	// 	case key.Event:
-	// 		if e.Name == key.NameEnter {
-	// 			ed.SetText("")
-	// 		}
-	// 	}
-	// }
-
 	// draw an editor with a border.
-	r := widget.Border{
+	return widget.Border{
 		Color:        borderColor,
 		CornerRadius: unit.Dp(4),
 		Width:        unit.Dp(borderWidth),
@@ -72,8 +51,4 @@ func (ed *GioInput) Layout(th *material.Theme, gtx layout.Context) layout.Dimens
 		return layout.UniformInset(unit.Dp(4)).Layout(gtx,
 			material.Editor(th, &ed.Editor, "").Layout)
 	})
-
-	// area.Pop()
-
-	return r
 }
