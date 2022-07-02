@@ -2,11 +2,12 @@ package ui
 
 import (
 	"image/color"
+	"io/ioutil"
 	"log"
 	"os"
 
 	"gioui.org/app"
-	"gioui.org/font/gofont"
+	"gioui.org/font/opentype"
 	"gioui.org/io/system"
 	"gioui.org/layout"
 	"gioui.org/op"
@@ -27,7 +28,24 @@ type GioBox struct {
 
 func NewGioBox() (*GioBox, error) {
 	w := app.NewWindow()
-	t := material.NewTheme(gofont.Collection())
+
+	b, err := ioutil.ReadFile("./SourceHanSerifCN-Light.ttf")
+	if err != nil {
+		return nil, err
+	}
+
+	font, err := opentype.Parse(b)
+	// font, err := opentype.Parse(regular.TTF)
+
+	if err != nil {
+		return nil, err
+	}
+	fonts := []text.FontFace{
+		{Face: font},
+	}
+	t := material.NewTheme(fonts)
+
+	// t := material.NewTheme(gofont.Collection())
 
 	title := material.H1(t, "Gio")
 	maroon := color.NRGBA{R: 127, G: 0, B: 0, A: 255}
