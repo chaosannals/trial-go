@@ -1,8 +1,8 @@
 package ui
 
 import (
+	"embed"
 	"image/color"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -26,10 +26,13 @@ type GioBox struct {
 	OnInput func(cmd string)
 }
 
+//go:embed "SourceHanSerifCN-Light.ttf"
+var shscnb embed.FS
+
 func NewGioBox() (*GioBox, error) {
 	w := app.NewWindow()
 
-	b, err := ioutil.ReadFile("./SourceHanSerifCN-Light.ttf")
+	b, err := shscnb.ReadFile("SourceHanSerifCN-Light.ttf")
 	if err != nil {
 		return nil, err
 	}
