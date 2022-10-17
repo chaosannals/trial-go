@@ -23,6 +23,16 @@ go1.17 download
 
 ## Go 构建镜像
 
+```bat
+@rem 设置阿里镜像
+set GOPROXY=https://mirrors.aliyun.com/goproxy/
+```
+
+```bash
+# 设置阿里镜像
+export GOPROXY=https://mirrors.aliyun.com/goproxy/
+```
+
 ```sh
 docker run -v /host/workspace:/workspace -e GOPROXY='https://mirrors.aliyun.com/goproxy/' -e GO111MODULE=on --name gomake gomake
 ```

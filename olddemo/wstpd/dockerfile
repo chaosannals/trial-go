@@ -1,0 +1,23 @@
+FROM golang:1.16.5-alpine AS builder
+
+COPY ./ /workspace
+
+ENV GOPROXY https://mirrors.aliyun.com/goproxy/
+ENV GO111MODULE on
+
+RUN apk update && \
+    apk add tzdata && \
+    cd /workspace && go build -o wstpd
+
+
+FROM golang:1.16.5-alpine
+
+ENV GOPROXY https://mirrors.aliyun.com/goproxy/
+ENV GO111MODULE on
+
+WORKDIR /app
+
+COPY --from=builder /workspace/wstpd /wstpd
+COPY --from=builder /usr/share/zoneinfo/PRC /etc/localtime
+
+ENTRYPOINT ["/wstpd"]

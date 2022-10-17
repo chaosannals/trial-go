@@ -1,0 +1,19 @@
+version: "3.8"
+
+services: 
+    server:
+        container_name: wstpd-server
+        image: trialgo/wstpd:1.0.0
+        ports: 
+            - 44444:44444
+        volumes: 
+            - .:/app
+        environment: 
+            - GIN_MODE=release
+        networks: 
+            - wstpd-net
+
+networks: 
+    wstpd-net:
+        driver: bridge
+        name: wstpd-net
