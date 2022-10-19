@@ -2,19 +2,21 @@ package trial
 
 import (
 	"fmt"
-	"log"
 	"net"
+	"github.com/rs/zerolog"
 )
 
 type TcpServer struct {
 	host string
 	port uint16
+	logger *zerolog.Logger
 }
 
-func NewTcpServer(conf *Conf) (*TcpServer, error) {
+func NewTcpServer(conf *Conf, logger *zerolog.Logger) (*TcpServer, error) {
 	return &TcpServer{
 		host: conf.TcpHost,
 		port: conf.TcpPort,
+		logger: logger,
 	}, nil
 }
 
@@ -26,11 +28,11 @@ func (i *TcpServer) Serve() error {
 	}
 	defer listener.Close()
 
-	log.Println("server start")
+	i.logger.Info().Msg("server start")
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			log.Printf("client error: %v", err)
+			i.logger.Error().Err(err).Msg("client accept failed.")
 			continue
 		}
 		go func() {

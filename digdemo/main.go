@@ -15,10 +15,12 @@ func main() {
 	if err := c.Provide(trial.NewTcpServer); err != nil {
 		log.Fatal(err)
 	}
-	err := c.Invoke(func(server *trial.TcpServer) {
+	if err := c.Provide(trial.NewZLogger); err != nil {
+		log.Fatal(err)
+	}
+	if err := c.Invoke(func(server *trial.TcpServer) {
 		server.Serve()
-	})
-	if err != nil {
+	}); err != nil {
 		log.Fatal(err)
 	}
 	log.Println("end.")
