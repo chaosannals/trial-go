@@ -28,9 +28,10 @@ GET     /login.html             Login.Index
 POST    /login/signin           Login.SignIn
 POST    /login/signout          Login.SignOut
 
-GET     /visit/list.html    Visit.Index
+GET     /visit/list         Visit.Index
 GET     /visit/:id          Visit.Info
 PUT     /visit/add          Visit.Add
 POST    /visit/edit         Visit.Edit
 PUT     /visit/upload       Visit.Upload
+GET     /visit/download     Visit.Download
 DELETE  /visit/delete       Visit.Delete

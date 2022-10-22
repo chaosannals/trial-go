@@ -1,6 +1,14 @@
 package controllers
 
-import "github.com/revel/revel"
+import (
+	"database/sql"
+	"fmt"
+	"os"
+	"reveldemo/app"
+	"strconv"
+
+	"github.com/revel/revel"
+)
 
 type Visit struct {
 	*revel.Controller
@@ -8,9 +16,33 @@ type Visit struct {
 
 func (c Visit) Index() revel.Result {
 	p := c.Params.Query.Get("p")
+	s := c.Params.Query.Get("s")
+	var pi int64
+	var si int64
+	var err error
+	if pi, err = strconv.ParseInt(p, 10, 64); err != nil {
+		pi = 1
+	}
+	if si, err = strconv.ParseInt(s, 10, 64); err != nil {
+		si = 20
+	}
+	if si > 100 {
+		si = 100
+	}
+
+	q := fmt.Sprintf("SELECT * FROM rd_visit LIMIT %d, %d", (pi-1)*si, si)
+	var rows *sql.Rows
+	if rows, err = app.DB.Query(q); err != nil {
+		return c.RenderJSON(map[string]interface{}{
+			"p":   p,
+			"s":   s,
+			"err": err,
+		})
+	}
 	return c.RenderJSON(map[string]interface{}{
-		"aaa": 123,
-		"p":   p,
+		"p":    p,
+		"s":    s,
+		"rows": rows,
 	})
 }
 
@@ -45,6 +77,14 @@ func (c Visit) Upload() revel.Result {
 		"aaa":  123,
 		"name": f[0].Filename,
 	})
+}
+
+func (c Visit) Download() revel.Result {
+	f, err := os.Open("README.md")
+	if err != nil {
+		return c.RenderFileName("README.md", revel.Attachment)
+	}
+	return c.RenderFile(f, revel.Inline)
 }
 
 // 自动通过参数匹配，类型转换，没有为该类型的 zero value
