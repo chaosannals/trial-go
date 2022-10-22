@@ -1,5 +1,7 @@
 # GoFrame Template For SingleRepo
 
+这个框架目录结构比较杂。
+
 ```bash
 # 调试，有 watch 重启。
 gf run main.go
