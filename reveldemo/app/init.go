@@ -2,10 +2,12 @@ package app
 
 import (
 	"database/sql"
+	"reveldemo/app/models"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/revel/modules"
 	"github.com/revel/revel"
+	"gopkg.in/gorp.v2"
 )
 
 var (
@@ -15,7 +17,8 @@ var (
 	// BuildTime revel app build-time (ldflags)
 	BuildTime string
 
-	DB *sql.DB
+	DB  *sql.DB     // 裸连 数据
+	DBM *gorp.DbMap //
 )
 
 func init() {
@@ -73,4 +76,14 @@ func InitDB() {
 	if err != nil {
 		revel.AppLog.Error("Db error", err)
 	}
+	DBM = &gorp.DbMap{
+		Db: DB,
+		Dialect: gorp.MySQLDialect{
+			Engine:   "InnoDB",
+			Encoding: "UTF8",
+		},
+	}
+	DBM.AddTableWithName(models.VisitModel{}, "rd_visit")
+	DBM.CreateTablesIfNotExists()
+
 }

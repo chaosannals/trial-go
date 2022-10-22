@@ -21,3 +21,12 @@ func (t *VisitTest) TestList() {
 	_, ok := data["rows"]
 	t.Assert(ok)
 }
+
+func (t *VisitTest) TestInfo() {
+	t.Get("/visit/123")
+	t.AssertOk()
+	t.AssertContentType("application/json; charset=utf-8")
+	var data map[string]interface{}
+	json.Unmarshal(t.ResponseBody, &data)
+	t.AssertEqual(data["id"], "123")
+}

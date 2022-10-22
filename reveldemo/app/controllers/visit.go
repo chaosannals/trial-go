@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reveldemo/app"
+	"reveldemo/app/models"
 	"strconv"
 
 	"github.com/revel/revel"
@@ -48,9 +49,25 @@ func (c Visit) Index() revel.Result {
 
 func (c Visit) Info() revel.Result {
 	vid := c.Params.Route.Get("id")
+	var vidi int64
+	var err error
+	if vidi, err = strconv.ParseInt(vid, 10, 64); err != nil {
+		return c.RenderJSON(map[string]interface{}{
+			"id":  vid,
+			"msg": "ID 非数字",
+		})
+	}
+
+	var info models.VisitModel
+	if err = app.DBM.SelectOne(&info, "SELECT * FROM rd_visit WHERE id=?", vidi); err != nil {
+		return c.RenderJSON(map[string]interface{}{
+			"id":  vid,
+			"msg": "不是有效的ID",
+		})
+	}
 	return c.RenderJSON(map[string]interface{}{
-		"aaa": 123,
-		"id":  vid,
+		"id":   vid,
+		"info": &info,
 	})
 }
 
