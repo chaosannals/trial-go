@@ -1,9 +1,9 @@
 package app
 
 import (
-	"os"
-	"log"
 	"database/sql"
+	// "log"
+	// "os"
 	"reveldemo/app/models"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -85,7 +85,8 @@ func InitDB() {
 			Encoding: "UTF8",
 		},
 	}
-	DBM.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
+	// DBM.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
+	DBM.TraceOn("[gorp]", NewDemoLogger())
 	DBM.AddTableWithName(models.VisitModel{}, "rd_visit")
 	DBM.CreateTablesIfNotExists()
 
