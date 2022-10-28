@@ -1,6 +1,8 @@
 package app
 
 import (
+	"os"
+	"log"
 	"database/sql"
 	"reveldemo/app/models"
 
@@ -83,6 +85,7 @@ func InitDB() {
 			Encoding: "UTF8",
 		},
 	}
+	DBM.TraceOn("[gorp]", log.New(os.Stdout, "myapp:", log.Lmicroseconds))
 	DBM.AddTableWithName(models.VisitModel{}, "rd_visit")
 	DBM.CreateTablesIfNotExists()
 

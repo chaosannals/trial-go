@@ -13,6 +13,8 @@ GET     /                                       App.Index
 GET     /favicon.ico                            404
 
 # Map static resources from the /app/public folder to the /public path
+# 静态路径的前缀是和其他互斥的，如果 /*filepath 会导致大部分路由注册失灵
+# 指定一个目录做静态
 GET     /public/*filepath                       Static.Serve("public")
 
 # Catch all, this will route any request into the controller path
