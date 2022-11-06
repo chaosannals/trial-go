@@ -12,6 +12,9 @@ func main() {
 	if err := c.Provide(trial.NewConf); err != nil {
 		log.Fatal(err)
 	}
+	if err := c.Provide(trial.NewGormDb); err != nil {
+		log.Fatal(err)
+	}
 	if err := c.Provide(trial.NewTcpServer); err != nil {
 		log.Fatal(err)
 	}
