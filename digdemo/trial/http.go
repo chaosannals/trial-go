@@ -24,8 +24,18 @@ func NewEchoHttpServer(conf *Conf, logger *zerolog.Logger) *http.Server {
 	e.Use(middleware.Recover())
 	apiGroup := e.Group("/api")
 	apiEmployeeGroup := apiGroup.Group("/employee")
-	apiEmployeeGroup.GET("/add", controllers.EmployeeAdd)
+	apiEmployeeGroup.GET("/list", controllers.EmployeeList)
+	apiEmployeeGroup.PUT("/add", controllers.EmployeeAdd)
+	apiEmployeeGroup.DELETE("/delete", controllers.EmployeeDel)
 	//apiGroup.GET("")
+
+	for _, r := range e.Routes() {
+		logger.Info().
+			Str("name", r.Name).
+			Str("path", r.Path).
+			Str("method", r.Method).
+			Msg("route:")
+	}
 
 	server := &http.Server{
 		Addr:           fmt.Sprintf("%s:%d", conf.HttpHost, conf.HttpPort),

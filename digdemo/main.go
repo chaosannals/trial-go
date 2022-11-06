@@ -28,6 +28,7 @@ func main() {
 	}
 
 	if err := c.Invoke(func(server *http.Server, logger *zerolog.Logger) {
+		logger.Info().Msg("http server start.")
 		if err := server.ListenAndServe(); err != nil {
 			logger.Err(err).Msg("http server serve error")
 		}
