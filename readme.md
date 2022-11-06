@@ -5,6 +5,10 @@
 ```bash
 # 查看配置
 go env
+
+# go1.13 后 可以通过命令设置
+go env -w GOPROXY=https://goproxy.io,direct
+go env -w GO111MODULE=on
 ```
 
 ## 多版本

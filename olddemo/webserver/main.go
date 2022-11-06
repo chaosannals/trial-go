@@ -1,9 +1,12 @@
 package main
 
 import (
-	"github.com/chaosannals/trial-go/controllers"
+	"errors"
+	"log"
+	"net/http"
+
 	"github.com/chaosannals/trial-go/logics"
-	"github.com/gin-gonic/gin"
+	"github.com/chaosannals/trial-go/bases"
 )
 
 func main() {
@@ -11,13 +14,9 @@ func main() {
 
 	defer logics.Recover()
 
-	r := gin.Default()
-	
-	r.PUT("/insert", controllers.Insert)
-	r.GET("/search", controllers.Search)
-	r.POST("/update", controllers.Update)
-	r.DELETE("/remove", controllers.Remove)
-	r.POST("/reword", controllers.Reword)
+	server := bases.NewHttpServer()
 
-	r.Run()
+	if err := server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		log.Printf("listen: %s\n", err)
+	}
 }

@@ -1,8 +1,8 @@
 package models
 
 import (
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite" //sqlite
+	"gorm.io/gorm"
+	"gorm.io/driver/sqlite"
 )
 
 //Store 存储
@@ -16,10 +16,13 @@ type Store struct {
 
 //InitStore 初始化
 func InitStore() *gorm.DB {
-	db, e := gorm.Open("sqlite3", "store.db")
+	db, e := gorm.Open(sqlite.Open("store.db"), &gorm.Config{})
 	if e != nil {
 		panic(e.Error())
 	}
-	db.CreateTable(&Store{})
+	// 老版初始化
+	// db.CreateTable(&Store{})
+	
+	db.AutoMigrate(&Store{})
 	return db
 }

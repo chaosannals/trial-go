@@ -17,6 +17,7 @@ func Remove(c *gin.Context) {
 		c.JSON(400, gin.H{
 			"message": e.Error(),
 		})
+		return
 	}
 	logics.Remove(param.ID)
 	c.JSON(200, gin.H{

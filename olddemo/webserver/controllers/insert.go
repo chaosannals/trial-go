@@ -21,6 +21,7 @@ func Insert(c *gin.Context) {
 		c.JSON(400, gin.H{
 			"message": e.Error(),
 		})
+		return
 	}
 	logics.Insert(models.Store{
 		ID:      param.ID,

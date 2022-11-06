@@ -5,7 +5,7 @@ import (
 	"github.com/chaosannals/trial-go/models"
 	"github.com/go-ego/riot"
 	"github.com/go-ego/riot/types"
-	"github.com/jinzhu/gorm"
+	"gorm.io/gorm"
 	"github.com/satori/go.uuid"
 )
 
@@ -28,7 +28,11 @@ func Recover() {
 
 //Insert 插入
 func Insert(data models.Store) *gorm.DB {
-	data.ID = uuid.NewV1().String()
+	if id, err := uuid.NewV1(); err != nil {
+
+	} else {
+		data.ID = id.String()
+	}
 	title.Index(data.ID, types.DocData{Content: data.Title}, false)
 	title.Flush()
 	content.Index(data.ID, types.DocData{Content: data.Content}, false)

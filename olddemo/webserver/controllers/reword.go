@@ -16,6 +16,7 @@ func Reword(c *gin.Context) {
 		c.JSON(400, gin.H{
 			"message": e.Error(),
 		})
+		return
 	}
 	c.JSON(200, gin.H{
 		"message": "ok",
