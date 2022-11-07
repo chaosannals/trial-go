@@ -15,6 +15,7 @@ func NewEchoHttpServer(
 	conf *Conf,
 	logger *zerolog.Logger,
 	employee *controllers.EmployeeController,
+	sign *controllers.SignController,
 ) *http.Server {
 	e := echo.New()
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
@@ -33,7 +34,11 @@ func NewEchoHttpServer(
 	}
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	apiGroup := e.Group("/api")
+
+	signGroup := e.Group("/sign", middleware.Gzip())
+	signGroup.GET("/login", sign.Login)
+
+	apiGroup := e.Group("/api", middleware.Gzip())
 	apiEmployeeGroup := apiGroup.Group("/employee")
 	apiEmployeeGroup.GET("/list", employee.List)
 	apiEmployeeGroup.PUT("/add", employee.Add)

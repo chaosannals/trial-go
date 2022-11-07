@@ -27,6 +27,11 @@ func main() {
 	if err := c.Provide(trial.NewEchoHttpServer); err != nil {
 		log.Fatal(err)
 	}
+
+	// 控制器
+	if err := c.Provide(controllers.NewSignController); err != nil {
+		log.Fatal(err)
+	}
 	if err := c.Provide(controllers.NewEmployeeController); err != nil {
 		log.Fatal(err)
 	}

@@ -27,7 +27,7 @@ func NewEmployeeController(
 func (i *EmployeeController) List(c echo.Context) (err error) {
 	var rows []models.EEmployee
 
-	i.db.Model(&models.EEmployee{}).Select("account, nickname").Find(&rows)
+	i.db.Model(&models.EEmployee{}).Select("*").Find(&rows)
 
 	return c.JSON(
 		http.StatusOK,
@@ -67,7 +67,9 @@ func (i *EmployeeController) Edit(c echo.Context) (err error) {
 		return
 	}
 
-	i.db.Save(row)
+	i.db.Model(&models.EEmployee{}).
+		Where("id = ?", row.ID).
+		Updates(row)
 	err = i.db.Error
 	if err != nil {
 		return
