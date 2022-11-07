@@ -5,6 +5,9 @@ import (
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"github.com/chaosannals/trial-go-digdemo/entities"
+	"github.com/chaosannals/trial-go-digdemo/models"
 )
 
 func NewGormDb(conf *Conf) (db *gorm.DB, err error) {
@@ -16,5 +19,14 @@ func NewGormDb(conf *Conf) (db *gorm.DB, err error) {
 		conf.DbPort,
 		conf.DbName,
 	)
-	return gorm.Open(mysql.Open(cs), &gorm.Config{})
+	if db, err = gorm.Open(mysql.Open(cs), &gorm.Config{}); err != nil {
+		return
+	}
+
+	// 启用生成的模型和查询代码
+	entities.Use(db)
+
+	// CodeFirst
+	err = db.AutoMigrate(models.EEmployee{})
+	return
 }

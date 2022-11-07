@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/chaosannals/trial-go-digdemo/controllers"
 	"github.com/chaosannals/trial-go-digdemo/trial"
 	"github.com/rs/zerolog"
 	"go.uber.org/dig"
@@ -24,6 +25,9 @@ func main() {
 		log.Fatal(err)
 	}
 	if err := c.Provide(trial.NewEchoHttpServer); err != nil {
+		log.Fatal(err)
+	}
+	if err := c.Provide(controllers.NewEmployeeController); err != nil {
 		log.Fatal(err)
 	}
 
