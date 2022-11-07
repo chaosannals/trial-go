@@ -1,13 +1,15 @@
 ###
 GET http://127.0.0.1:44440/api/employee/list HTTP/1.1
-
+Signature: 123456789
 
 ###
 PUT http://127.0.0.1:44440/api/employee/add HTTP/1.1
 Content-Type: application/json
+Signature: 123456789
 
 {
-    "account": "1234568",
+    "account": "12345686669",
+    "password": "MTIzNDU2Nzg=",
     "nickname": "tester"
 }
 
@@ -18,5 +20,6 @@ Content-Type: application/json
 {
     "id": 1,
     "account": "123456877777",
+    "password": "MTIzNDU2Nzg=",
     "nickname": "tester11111111111111111"
 }

@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
+	"regexp"
 
 	"github.com/chaosannals/trial-go-digdemo/models"
 	"github.com/labstack/echo/v4"
@@ -45,9 +47,18 @@ func (i *EmployeeController) Add(c echo.Context) (err error) {
 		return
 	}
 
-	i.db.Create(row)
-	err = i.db.Error
-	if err != nil {
+	db := i.db.Create(row) // 返回的 db 不是 i.db
+	if err = db.Error; err != nil {
+		if ok, err := regexp.MatchString("Duplicate\\s+entry.+?ACCOUNT_UNIQUE", err.Error()); ok && err == nil {
+			return c.JSON(
+				http.StatusOK,
+				map[string]any{
+					"code":    -1,
+					"account":      row.Account,
+					"message": "账号重复",
+				},
+			)
+		}
 		return
 	}
 
@@ -67,11 +78,10 @@ func (i *EmployeeController) Edit(c echo.Context) (err error) {
 		return
 	}
 
-	i.db.Model(&models.EEmployee{}).
+	if err = i.db.Model(&models.EEmployee{}).
 		Where("id = ?", row.ID).
-		Updates(row)
-	err = i.db.Error
-	if err != nil {
+		Updates(row).
+		Error; err != nil {
 		return
 	}
 
@@ -87,9 +97,17 @@ func (i *EmployeeController) Edit(c echo.Context) (err error) {
 
 func (i *EmployeeController) Del(c echo.Context) (err error) {
 	id := c.Param("id")
-	i.db.Delete(&models.EEmployee{}, id)
-	err = i.db.Error
-	if err != nil {
+	if err = i.db.Delete(&models.EEmployee{}, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return c.JSON(
+				http.StatusOK,
+				map[string]any{
+					"code":    0,
+					"id": id,
+					"message": "不是有效的id",
+				},
+			)
+		}
 		return
 	}
 

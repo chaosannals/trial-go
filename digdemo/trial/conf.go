@@ -15,9 +15,9 @@ type Conf struct {
 // Provider 必须返回 实例  可以有后续 error 返回从 provide 传出
 func NewConf() (*Conf, error) {
 	return &Conf{
-		TcpHost:  "0.0.0.0",
+		TcpHost:  "127.0.0.1",
 		TcpPort:  44444,
-		HttpHost: "0.0.0.0",
+		HttpHost: "127.0.0.1",
 		HttpPort: 44440,
 		DbHost:   "localhost",
 		DbPort:   3306,

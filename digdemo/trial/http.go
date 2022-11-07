@@ -36,9 +36,9 @@ func NewEchoHttpServer(
 	e.Use(middleware.Recover())
 
 	signGroup := e.Group("/sign", middleware.Gzip())
-	signGroup.GET("/login", sign.Login)
+	signGroup.POST("/login", sign.Login)
 
-	apiGroup := e.Group("/api", middleware.Gzip())
+	apiGroup := e.Group("/api", middleware.Gzip(), ApiAuth)
 	apiEmployeeGroup := apiGroup.Group("/employee")
 	apiEmployeeGroup.GET("/list", employee.List)
 	apiEmployeeGroup.PUT("/add", employee.Add)
