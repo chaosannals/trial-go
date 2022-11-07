@@ -54,7 +54,7 @@ func (i *EmployeeController) Add(c echo.Context) (err error) {
 				http.StatusOK,
 				map[string]any{
 					"code":    -1,
-					"account":      row.Account,
+					"account": row.Account,
 					"message": "账号重复",
 				},
 			)
@@ -72,15 +72,54 @@ func (i *EmployeeController) Add(c echo.Context) (err error) {
 	)
 }
 
+type EmployeeEditParam struct {
+	models.EEmployee
+	Mobilephones []string `json:"mobilephones"`
+}
+
 func (i *EmployeeController) Edit(c echo.Context) (err error) {
-	row := &models.EEmployee{}
-	if err = c.Bind(row); err != nil {
+	i.logger.Trace().Msg("获取数据")
+	param := &EmployeeEditParam{}
+	if err = c.Bind(param); err != nil {
 		return
 	}
 
-	if err = i.db.Model(&models.EEmployee{}).
+	row := &param.EEmployee
+	i.logger.Trace().Msg("开始事务")
+	tx := i.db.Begin()
+	defer func() {
+		if err != nil {
+			i.logger.Trace().Msg("回滚")
+			tx.Rollback()
+		} else {
+			i.logger.Trace().Msg("提交")
+			tx.Commit()
+		}
+	}()
+
+	if err = tx.Model(&models.EEmployee{}).
 		Where("id = ?", row.ID).
 		Updates(row).
+		Error; err != nil {
+		return
+	}
+
+	if err = tx.Where("employee_id = ?", row.ID).
+		Delete(&models.EEmployeeMobilephone{}).
+		Error; err != nil {
+		return
+	}
+
+	var ems []models.EEmployeeMobilephone
+	for _, m := range param.Mobilephones {
+		ems = append(ems, models.EEmployeeMobilephone{
+			EmployeeID:  row.ID,
+			Mobilephone: m,
+		})
+	}
+	
+	if err = tx.Model(&models.EEmployeeMobilephone{}).
+		Create(&ems).
 		Error; err != nil {
 		return
 	}
@@ -103,7 +142,7 @@ func (i *EmployeeController) Del(c echo.Context) (err error) {
 				http.StatusOK,
 				map[string]any{
 					"code":    0,
-					"id": id,
+					"id":      id,
 					"message": "不是有效的id",
 				},
 			)
