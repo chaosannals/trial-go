@@ -18,7 +18,7 @@ gentool -h
 # -modelPkgName="models" 模型的包名，一般和 query 等是分开的、
 # -withUnitTest 输出单元测试
 # -onlyModel 只输出模型
-gentool -dsn "root:password@tcp(localhost:3306)/exert?charset=utf8mb4&parseTime=True&loc=Local" -tables "e_employee,e_employee_mobilephone" -modelPkgName="models" -outPath="./entities" -fieldNullable -fieldWithIndexTag -fieldWithTypeTag  -fieldSignable 
+gentool -db mysql -dsn "root:password@tcp(localhost:3306)/exert?charset=utf8mb4&parseTime=True&loc=Local" -tables "e_employee,e_employee_mobilephone" -modelPkgName="models" -outPath="./entities" -fieldNullable -fieldWithIndexTag -fieldWithTypeTag  -fieldSignable 
 
 gentool -dsn "root:password@tcp(localhost:3306)/exert?charset=utf8mb4&parseTime=True&loc=Local" -tables "e_employee,e_employee_mobilephone" -modelPkgName="models" -outPath="./entities" -withUnitTest -fieldWithIndexTag
 ```

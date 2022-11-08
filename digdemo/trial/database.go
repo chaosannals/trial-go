@@ -27,6 +27,9 @@ func NewGormDb(conf *Conf) (db *gorm.DB, err error) {
 	entities.Use(db)
 
 	// CodeFirst
-	err = db.AutoMigrate(models.EEmployee{})
+	err = db.AutoMigrate(
+		models.EEmployee{},
+		models.EEmployeeMobilephone{},
+	)
 	return
 }
