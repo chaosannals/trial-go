@@ -2,14 +2,6 @@
 
 A high-productivity web framework for the [Go language](http://www.golang.org/).
 
-```bash
-# 安装命令行工具
-go install github.com/revel/cmd/revel@latest
-
-# 创建项目
-revel new myapp
-```
-
 ### Start the web server:
 
 ```bash
