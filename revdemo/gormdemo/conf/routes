@@ -8,6 +8,7 @@ module:testrunner
 
 
 GET     /                                       App.Index
+GET     /result                                 App.ReturnMyResult
 POST    /login                                  Sign.Login
 
 GET     /employee/find                          Employee.Find

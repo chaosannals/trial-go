@@ -17,9 +17,14 @@ var (
 	AppVersion string   // 版本
 	BuildTime  string   // 构建时间
 	Db         *gorm.DB //
+
+	// 新日志实例，没有打印
+	Log = revel.RootLog.New("for", "format")
 )
 
 func init() {
+	Log.SetStackDepth(1)
+
 	// Filters is the default set of global filters.
 	revel.Filters = []revel.Filter{
 		revel.PanicFilter,             // Recover from panics and display an error page instead.

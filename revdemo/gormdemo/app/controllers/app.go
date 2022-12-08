@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"fmt"
+	"gormdemo/app"
+	"gormdemo/util"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -20,8 +23,19 @@ func (c App) Index() revel.Result {
 	c.ViewArgs["count"] = strconv.Itoa(c.Count)
 	c.ViewArgs["pointer"] = unsafe.Pointer(&c)
 	c.ViewArgs["intp"] = strconv.Itoa(*c.IntPtr)
-	
+	revel.AppLog.Info(fmt.Sprintf("intp: %d", *c.IntPtr))
+	app.Log.Infof("---------------- %d", *c.IntPtr)
 	return c.Render()
+}
+
+func (c App) ReturnMyResult() revel.Result {
+	revel.AppLog.Warn("result call------")
+	return &util.MyResult{
+		Content: map[string]interface{}{
+			"aaaaa": 123,
+			"bbbb": 23423,
+		},
+	}
 }
 
 func (c App) GetType() reflect.Type {
