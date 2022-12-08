@@ -68,7 +68,7 @@ func (e *eEmployeeMobilephone) updateTableName(table string) *eEmployeeMobilepho
 	return e
 }
 
-func (e *eEmployeeMobilephone) WithContext(ctx context.Context) *eEmployeeMobilephoneDo {
+func (e *eEmployeeMobilephone) WithContext(ctx context.Context) IEEmployeeMobilephoneDo {
 	return e.eEmployeeMobilephoneDo.WithContext(ctx)
 }
 
@@ -104,99 +104,160 @@ func (e eEmployeeMobilephone) replaceDB(db *gorm.DB) eEmployeeMobilephone {
 
 type eEmployeeMobilephoneDo struct{ gen.DO }
 
-func (e eEmployeeMobilephoneDo) Debug() *eEmployeeMobilephoneDo {
+type IEEmployeeMobilephoneDo interface {
+	gen.SubQuery
+	Debug() IEEmployeeMobilephoneDo
+	WithContext(ctx context.Context) IEEmployeeMobilephoneDo
+	WithResult(fc func(tx gen.Dao)) gen.ResultInfo
+	ReplaceDB(db *gorm.DB)
+	ReadDB() IEEmployeeMobilephoneDo
+	WriteDB() IEEmployeeMobilephoneDo
+	As(alias string) gen.Dao
+	Session(config *gorm.Session) IEEmployeeMobilephoneDo
+	Columns(cols ...field.Expr) gen.Columns
+	Clauses(conds ...clause.Expression) IEEmployeeMobilephoneDo
+	Not(conds ...gen.Condition) IEEmployeeMobilephoneDo
+	Or(conds ...gen.Condition) IEEmployeeMobilephoneDo
+	Select(conds ...field.Expr) IEEmployeeMobilephoneDo
+	Where(conds ...gen.Condition) IEEmployeeMobilephoneDo
+	Order(conds ...field.Expr) IEEmployeeMobilephoneDo
+	Distinct(cols ...field.Expr) IEEmployeeMobilephoneDo
+	Omit(cols ...field.Expr) IEEmployeeMobilephoneDo
+	Join(table schema.Tabler, on ...field.Expr) IEEmployeeMobilephoneDo
+	LeftJoin(table schema.Tabler, on ...field.Expr) IEEmployeeMobilephoneDo
+	RightJoin(table schema.Tabler, on ...field.Expr) IEEmployeeMobilephoneDo
+	Group(cols ...field.Expr) IEEmployeeMobilephoneDo
+	Having(conds ...gen.Condition) IEEmployeeMobilephoneDo
+	Limit(limit int) IEEmployeeMobilephoneDo
+	Offset(offset int) IEEmployeeMobilephoneDo
+	Count() (count int64, err error)
+	Scopes(funcs ...func(gen.Dao) gen.Dao) IEEmployeeMobilephoneDo
+	Unscoped() IEEmployeeMobilephoneDo
+	Create(values ...*models.EEmployeeMobilephone) error
+	CreateInBatches(values []*models.EEmployeeMobilephone, batchSize int) error
+	Save(values ...*models.EEmployeeMobilephone) error
+	First() (*models.EEmployeeMobilephone, error)
+	Take() (*models.EEmployeeMobilephone, error)
+	Last() (*models.EEmployeeMobilephone, error)
+	Find() ([]*models.EEmployeeMobilephone, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*models.EEmployeeMobilephone, err error)
+	FindInBatches(result *[]*models.EEmployeeMobilephone, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Pluck(column field.Expr, dest interface{}) error
+	Delete(...*models.EEmployeeMobilephone) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
+	Updates(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
+	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
+	UpdateFrom(q gen.SubQuery) gen.Dao
+	Attrs(attrs ...field.AssignExpr) IEEmployeeMobilephoneDo
+	Assign(attrs ...field.AssignExpr) IEEmployeeMobilephoneDo
+	Joins(fields ...field.RelationField) IEEmployeeMobilephoneDo
+	Preload(fields ...field.RelationField) IEEmployeeMobilephoneDo
+	FirstOrInit() (*models.EEmployeeMobilephone, error)
+	FirstOrCreate() (*models.EEmployeeMobilephone, error)
+	FindByPage(offset int, limit int) (result []*models.EEmployeeMobilephone, count int64, err error)
+	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
+	Scan(result interface{}) (err error)
+	Returning(value interface{}, columns ...string) IEEmployeeMobilephoneDo
+	UnderlyingDB() *gorm.DB
+	schema.Tabler
+}
+
+func (e eEmployeeMobilephoneDo) Debug() IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Debug())
 }
 
-func (e eEmployeeMobilephoneDo) WithContext(ctx context.Context) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) WithContext(ctx context.Context) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.WithContext(ctx))
 }
 
-func (e eEmployeeMobilephoneDo) ReadDB() *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) ReadDB() IEEmployeeMobilephoneDo {
 	return e.Clauses(dbresolver.Read)
 }
 
-func (e eEmployeeMobilephoneDo) WriteDB() *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) WriteDB() IEEmployeeMobilephoneDo {
 	return e.Clauses(dbresolver.Write)
 }
 
-func (e eEmployeeMobilephoneDo) Session(config *gorm.Session) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Session(config *gorm.Session) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Session(config))
 }
 
-func (e eEmployeeMobilephoneDo) Clauses(conds ...clause.Expression) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Clauses(conds ...clause.Expression) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Clauses(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Returning(value interface{}, columns ...string) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Returning(value interface{}, columns ...string) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Returning(value, columns...))
 }
 
-func (e eEmployeeMobilephoneDo) Not(conds ...gen.Condition) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Not(conds ...gen.Condition) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Not(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Or(conds ...gen.Condition) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Or(conds ...gen.Condition) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Or(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Select(conds ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Select(conds ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Select(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Where(conds ...gen.Condition) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Where(conds ...gen.Condition) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Where(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Exists(subquery interface{ UnderlyingDB() *gorm.DB }) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Exists(subquery interface{ UnderlyingDB() *gorm.DB }) IEEmployeeMobilephoneDo {
 	return e.Where(field.CompareSubQuery(field.ExistsOp, nil, subquery.UnderlyingDB()))
 }
 
-func (e eEmployeeMobilephoneDo) Order(conds ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Order(conds ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Order(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Distinct(cols ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Distinct(cols ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Distinct(cols...))
 }
 
-func (e eEmployeeMobilephoneDo) Omit(cols ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Omit(cols ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Omit(cols...))
 }
 
-func (e eEmployeeMobilephoneDo) Join(table schema.Tabler, on ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Join(table schema.Tabler, on ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Join(table, on...))
 }
 
-func (e eEmployeeMobilephoneDo) LeftJoin(table schema.Tabler, on ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) LeftJoin(table schema.Tabler, on ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.LeftJoin(table, on...))
 }
 
-func (e eEmployeeMobilephoneDo) RightJoin(table schema.Tabler, on ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) RightJoin(table schema.Tabler, on ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.RightJoin(table, on...))
 }
 
-func (e eEmployeeMobilephoneDo) Group(cols ...field.Expr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Group(cols ...field.Expr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Group(cols...))
 }
 
-func (e eEmployeeMobilephoneDo) Having(conds ...gen.Condition) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Having(conds ...gen.Condition) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Having(conds...))
 }
 
-func (e eEmployeeMobilephoneDo) Limit(limit int) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Limit(limit int) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Limit(limit))
 }
 
-func (e eEmployeeMobilephoneDo) Offset(offset int) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Offset(offset int) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Offset(offset))
 }
 
-func (e eEmployeeMobilephoneDo) Scopes(funcs ...func(gen.Dao) gen.Dao) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Scopes(funcs...))
 }
 
-func (e eEmployeeMobilephoneDo) Unscoped() *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Unscoped() IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Unscoped())
 }
 
@@ -262,22 +323,22 @@ func (e eEmployeeMobilephoneDo) FindInBatches(result *[]*models.EEmployeeMobilep
 	return e.DO.FindInBatches(result, batchSize, fc)
 }
 
-func (e eEmployeeMobilephoneDo) Attrs(attrs ...field.AssignExpr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Attrs(attrs ...field.AssignExpr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Attrs(attrs...))
 }
 
-func (e eEmployeeMobilephoneDo) Assign(attrs ...field.AssignExpr) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Assign(attrs ...field.AssignExpr) IEEmployeeMobilephoneDo {
 	return e.withDO(e.DO.Assign(attrs...))
 }
 
-func (e eEmployeeMobilephoneDo) Joins(fields ...field.RelationField) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Joins(fields ...field.RelationField) IEEmployeeMobilephoneDo {
 	for _, _f := range fields {
 		e = *e.withDO(e.DO.Joins(_f))
 	}
 	return &e
 }
 
-func (e eEmployeeMobilephoneDo) Preload(fields ...field.RelationField) *eEmployeeMobilephoneDo {
+func (e eEmployeeMobilephoneDo) Preload(fields ...field.RelationField) IEEmployeeMobilephoneDo {
 	for _, _f := range fields {
 		e = *e.withDO(e.DO.Preload(_f))
 	}

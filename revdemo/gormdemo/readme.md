@@ -7,9 +7,20 @@ revel run
 # /@tests 下是接口测试
 ```
 
-## [GEN](https://gorm.io/gen/index.html)
+## 两种数据库管理的方式 GEN 和 GEN TOOL
 
-## [GEN Tool](https://gorm.io/gen/gen_tool.html)
+### [GEN](https://gorm.io/gen/index.html)
+
+```bash
+# 通过定制化程序生成
+go run tool/main.go
+```
+
+### [GEN Tool](https://gorm.io/gen/gen_tool.html)
+
+这个是官方封装的一个命令行程序，通过配置参数，不用写 go 文件。
+
+注：没有开放 Mode 参数，导致 Mode 是空配置。
 
 ```bash
 # 安装 GORM 工具

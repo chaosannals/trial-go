@@ -77,7 +77,7 @@ func (e *eEmployee) updateTableName(table string) *eEmployee {
 	return e
 }
 
-func (e *eEmployee) WithContext(ctx context.Context) *eEmployeeDo {
+func (e *eEmployee) WithContext(ctx context.Context) IEEmployeeDo {
 	return e.eEmployeeDo.WithContext(ctx)
 }
 
@@ -116,99 +116,160 @@ func (e eEmployee) replaceDB(db *gorm.DB) eEmployee {
 
 type eEmployeeDo struct{ gen.DO }
 
-func (e eEmployeeDo) Debug() *eEmployeeDo {
+type IEEmployeeDo interface {
+	gen.SubQuery
+	Debug() IEEmployeeDo
+	WithContext(ctx context.Context) IEEmployeeDo
+	WithResult(fc func(tx gen.Dao)) gen.ResultInfo
+	ReplaceDB(db *gorm.DB)
+	ReadDB() IEEmployeeDo
+	WriteDB() IEEmployeeDo
+	As(alias string) gen.Dao
+	Session(config *gorm.Session) IEEmployeeDo
+	Columns(cols ...field.Expr) gen.Columns
+	Clauses(conds ...clause.Expression) IEEmployeeDo
+	Not(conds ...gen.Condition) IEEmployeeDo
+	Or(conds ...gen.Condition) IEEmployeeDo
+	Select(conds ...field.Expr) IEEmployeeDo
+	Where(conds ...gen.Condition) IEEmployeeDo
+	Order(conds ...field.Expr) IEEmployeeDo
+	Distinct(cols ...field.Expr) IEEmployeeDo
+	Omit(cols ...field.Expr) IEEmployeeDo
+	Join(table schema.Tabler, on ...field.Expr) IEEmployeeDo
+	LeftJoin(table schema.Tabler, on ...field.Expr) IEEmployeeDo
+	RightJoin(table schema.Tabler, on ...field.Expr) IEEmployeeDo
+	Group(cols ...field.Expr) IEEmployeeDo
+	Having(conds ...gen.Condition) IEEmployeeDo
+	Limit(limit int) IEEmployeeDo
+	Offset(offset int) IEEmployeeDo
+	Count() (count int64, err error)
+	Scopes(funcs ...func(gen.Dao) gen.Dao) IEEmployeeDo
+	Unscoped() IEEmployeeDo
+	Create(values ...*models.EEmployee) error
+	CreateInBatches(values []*models.EEmployee, batchSize int) error
+	Save(values ...*models.EEmployee) error
+	First() (*models.EEmployee, error)
+	Take() (*models.EEmployee, error)
+	Last() (*models.EEmployee, error)
+	Find() ([]*models.EEmployee, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*models.EEmployee, err error)
+	FindInBatches(result *[]*models.EEmployee, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Pluck(column field.Expr, dest interface{}) error
+	Delete(...*models.EEmployee) (info gen.ResultInfo, err error)
+	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
+	Updates(value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumn(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
+	UpdateColumnSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
+	UpdateColumns(value interface{}) (info gen.ResultInfo, err error)
+	UpdateFrom(q gen.SubQuery) gen.Dao
+	Attrs(attrs ...field.AssignExpr) IEEmployeeDo
+	Assign(attrs ...field.AssignExpr) IEEmployeeDo
+	Joins(fields ...field.RelationField) IEEmployeeDo
+	Preload(fields ...field.RelationField) IEEmployeeDo
+	FirstOrInit() (*models.EEmployee, error)
+	FirstOrCreate() (*models.EEmployee, error)
+	FindByPage(offset int, limit int) (result []*models.EEmployee, count int64, err error)
+	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
+	Scan(result interface{}) (err error)
+	Returning(value interface{}, columns ...string) IEEmployeeDo
+	UnderlyingDB() *gorm.DB
+	schema.Tabler
+}
+
+func (e eEmployeeDo) Debug() IEEmployeeDo {
 	return e.withDO(e.DO.Debug())
 }
 
-func (e eEmployeeDo) WithContext(ctx context.Context) *eEmployeeDo {
+func (e eEmployeeDo) WithContext(ctx context.Context) IEEmployeeDo {
 	return e.withDO(e.DO.WithContext(ctx))
 }
 
-func (e eEmployeeDo) ReadDB() *eEmployeeDo {
+func (e eEmployeeDo) ReadDB() IEEmployeeDo {
 	return e.Clauses(dbresolver.Read)
 }
 
-func (e eEmployeeDo) WriteDB() *eEmployeeDo {
+func (e eEmployeeDo) WriteDB() IEEmployeeDo {
 	return e.Clauses(dbresolver.Write)
 }
 
-func (e eEmployeeDo) Session(config *gorm.Session) *eEmployeeDo {
+func (e eEmployeeDo) Session(config *gorm.Session) IEEmployeeDo {
 	return e.withDO(e.DO.Session(config))
 }
 
-func (e eEmployeeDo) Clauses(conds ...clause.Expression) *eEmployeeDo {
+func (e eEmployeeDo) Clauses(conds ...clause.Expression) IEEmployeeDo {
 	return e.withDO(e.DO.Clauses(conds...))
 }
 
-func (e eEmployeeDo) Returning(value interface{}, columns ...string) *eEmployeeDo {
+func (e eEmployeeDo) Returning(value interface{}, columns ...string) IEEmployeeDo {
 	return e.withDO(e.DO.Returning(value, columns...))
 }
 
-func (e eEmployeeDo) Not(conds ...gen.Condition) *eEmployeeDo {
+func (e eEmployeeDo) Not(conds ...gen.Condition) IEEmployeeDo {
 	return e.withDO(e.DO.Not(conds...))
 }
 
-func (e eEmployeeDo) Or(conds ...gen.Condition) *eEmployeeDo {
+func (e eEmployeeDo) Or(conds ...gen.Condition) IEEmployeeDo {
 	return e.withDO(e.DO.Or(conds...))
 }
 
-func (e eEmployeeDo) Select(conds ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) Select(conds ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.Select(conds...))
 }
 
-func (e eEmployeeDo) Where(conds ...gen.Condition) *eEmployeeDo {
+func (e eEmployeeDo) Where(conds ...gen.Condition) IEEmployeeDo {
 	return e.withDO(e.DO.Where(conds...))
 }
 
-func (e eEmployeeDo) Exists(subquery interface{ UnderlyingDB() *gorm.DB }) *eEmployeeDo {
+func (e eEmployeeDo) Exists(subquery interface{ UnderlyingDB() *gorm.DB }) IEEmployeeDo {
 	return e.Where(field.CompareSubQuery(field.ExistsOp, nil, subquery.UnderlyingDB()))
 }
 
-func (e eEmployeeDo) Order(conds ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) Order(conds ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.Order(conds...))
 }
 
-func (e eEmployeeDo) Distinct(cols ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) Distinct(cols ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.Distinct(cols...))
 }
 
-func (e eEmployeeDo) Omit(cols ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) Omit(cols ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.Omit(cols...))
 }
 
-func (e eEmployeeDo) Join(table schema.Tabler, on ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) Join(table schema.Tabler, on ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.Join(table, on...))
 }
 
-func (e eEmployeeDo) LeftJoin(table schema.Tabler, on ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) LeftJoin(table schema.Tabler, on ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.LeftJoin(table, on...))
 }
 
-func (e eEmployeeDo) RightJoin(table schema.Tabler, on ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) RightJoin(table schema.Tabler, on ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.RightJoin(table, on...))
 }
 
-func (e eEmployeeDo) Group(cols ...field.Expr) *eEmployeeDo {
+func (e eEmployeeDo) Group(cols ...field.Expr) IEEmployeeDo {
 	return e.withDO(e.DO.Group(cols...))
 }
 
-func (e eEmployeeDo) Having(conds ...gen.Condition) *eEmployeeDo {
+func (e eEmployeeDo) Having(conds ...gen.Condition) IEEmployeeDo {
 	return e.withDO(e.DO.Having(conds...))
 }
 
-func (e eEmployeeDo) Limit(limit int) *eEmployeeDo {
+func (e eEmployeeDo) Limit(limit int) IEEmployeeDo {
 	return e.withDO(e.DO.Limit(limit))
 }
 
-func (e eEmployeeDo) Offset(offset int) *eEmployeeDo {
+func (e eEmployeeDo) Offset(offset int) IEEmployeeDo {
 	return e.withDO(e.DO.Offset(offset))
 }
 
-func (e eEmployeeDo) Scopes(funcs ...func(gen.Dao) gen.Dao) *eEmployeeDo {
+func (e eEmployeeDo) Scopes(funcs ...func(gen.Dao) gen.Dao) IEEmployeeDo {
 	return e.withDO(e.DO.Scopes(funcs...))
 }
 
-func (e eEmployeeDo) Unscoped() *eEmployeeDo {
+func (e eEmployeeDo) Unscoped() IEEmployeeDo {
 	return e.withDO(e.DO.Unscoped())
 }
 
@@ -274,22 +335,22 @@ func (e eEmployeeDo) FindInBatches(result *[]*models.EEmployee, batchSize int, f
 	return e.DO.FindInBatches(result, batchSize, fc)
 }
 
-func (e eEmployeeDo) Attrs(attrs ...field.AssignExpr) *eEmployeeDo {
+func (e eEmployeeDo) Attrs(attrs ...field.AssignExpr) IEEmployeeDo {
 	return e.withDO(e.DO.Attrs(attrs...))
 }
 
-func (e eEmployeeDo) Assign(attrs ...field.AssignExpr) *eEmployeeDo {
+func (e eEmployeeDo) Assign(attrs ...field.AssignExpr) IEEmployeeDo {
 	return e.withDO(e.DO.Assign(attrs...))
 }
 
-func (e eEmployeeDo) Joins(fields ...field.RelationField) *eEmployeeDo {
+func (e eEmployeeDo) Joins(fields ...field.RelationField) IEEmployeeDo {
 	for _, _f := range fields {
 		e = *e.withDO(e.DO.Joins(_f))
 	}
 	return &e
 }
 
-func (e eEmployeeDo) Preload(fields ...field.RelationField) *eEmployeeDo {
+func (e eEmployeeDo) Preload(fields ...field.RelationField) IEEmployeeDo {
 	for _, _f := range fields {
 		e = *e.withDO(e.DO.Preload(_f))
 	}
