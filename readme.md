@@ -38,6 +38,15 @@ go1.17 download
 
 ## Go 构建镜像
 
+```bash
+# 使用 go env -w 设置
+go env -w GOPROXY=https://proxy.golang.com.cn,direct
+# 不用像下面那样改环境变量。
+
+# 另一个镜像
+go env -w GOPROXY=https://goproxy.cn,direct
+```
+
 ```bat
 @rem 设置阿里镜像
 set GOPROXY=https://mirrors.aliyun.com/goproxy/
