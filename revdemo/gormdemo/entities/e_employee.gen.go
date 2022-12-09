@@ -32,6 +32,7 @@ func newEEmployee(db *gorm.DB, opts ...gen.DOOption) eEmployee {
 	_eEmployee.Password = field.NewBytes(tableName, "password")
 	_eEmployee.Nickname = field.NewString(tableName, "nickname")
 	_eEmployee.CreatedAt = field.NewTime(tableName, "created_at")
+	_eEmployee.RemovedAt = field.NewTime(tableName, "removed_at")
 	_eEmployee.LastLoginAt = field.NewTime(tableName, "last_login_at")
 
 	_eEmployee.fillFieldMap()
@@ -44,11 +45,12 @@ type eEmployee struct {
 
 	ALL         field.Asterisk
 	ID          field.Uint64
-	Account     field.String
+	Account     field.String // 账号
 	Password    field.Bytes
-	Nickname    field.String
-	CreatedAt   field.Time
-	LastLoginAt field.Time
+	Nickname    field.String // 昵称
+	CreatedAt   field.Time   // 创建时间
+	RemovedAt   field.Time   // 删除时间
+	LastLoginAt field.Time   // 最后登录时间
 
 	fieldMap map[string]field.Expr
 }
@@ -70,6 +72,7 @@ func (e *eEmployee) updateTableName(table string) *eEmployee {
 	e.Password = field.NewBytes(table, "password")
 	e.Nickname = field.NewString(table, "nickname")
 	e.CreatedAt = field.NewTime(table, "created_at")
+	e.RemovedAt = field.NewTime(table, "removed_at")
 	e.LastLoginAt = field.NewTime(table, "last_login_at")
 
 	e.fillFieldMap()
@@ -95,12 +98,13 @@ func (e *eEmployee) GetFieldByName(fieldName string) (field.OrderExpr, bool) {
 }
 
 func (e *eEmployee) fillFieldMap() {
-	e.fieldMap = make(map[string]field.Expr, 6)
+	e.fieldMap = make(map[string]field.Expr, 7)
 	e.fieldMap["id"] = e.ID
 	e.fieldMap["account"] = e.Account
 	e.fieldMap["password"] = e.Password
 	e.fieldMap["nickname"] = e.Nickname
 	e.fieldMap["created_at"] = e.CreatedAt
+	e.fieldMap["removed_at"] = e.RemovedAt
 	e.fieldMap["last_login_at"] = e.LastLoginAt
 }
 

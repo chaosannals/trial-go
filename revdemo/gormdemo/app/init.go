@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"time"
 
+	"gormdemo/entities"
 	"gormdemo/util"
 
 	_ "github.com/revel/modules"
@@ -123,4 +124,5 @@ func InitDB() {
 	if revel.DevMode == true {
 
 	}
+	entities.SetDefault(Db)
 }
