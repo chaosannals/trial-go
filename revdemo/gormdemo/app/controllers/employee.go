@@ -16,15 +16,15 @@ type Employee struct {
 }
 
 type AA struct {
-	I1 int `json:"i1"`
-	I2 int `json:"i2"`
+	I1 int     `json:"i1"`
+	I2 int     `json:"i2"`
 	F2 float32 `json:"f2"`
 }
 
 func (c Employee) Find(p int, ps int) revel.Result {
 	// gen 的 models 是常规查询方式
 	psize := (int)(math.Min(100, (float64)(ps)))
-	offset := (int)(math.Max((float64)(p - 1), 0)) * psize
+	offset := (int)(math.Max((float64)(p-1), 0)) * psize
 	rows, err := app.Db.
 		Model(&models.EEmployee{}).
 		Where("removed_at IS NULL").
@@ -45,8 +45,8 @@ func (c Employee) Find(p int, ps int) revel.Result {
 
 	return c.RenderJSON(map[string]interface{}{
 		"rows": rows,
-		"a": a,
-		"err": err,
+		"a":    a,
+		"err":  err,
 	})
 }
 
@@ -61,6 +61,33 @@ func (c Employee) Info(id uint64) revel.Result {
 		return c.RenderError(err)
 	}
 	return c.RenderJSON(map[string]interface{}{
+		"info": info,
+	})
+}
+
+func (c Employee) Add(e models.EEmployee) revel.Result {
+	err := entities.EEmployee.
+		WithContext(c.Request.Context()).
+		Create(&e)
+	if err != nil {
+		return c.RenderError(err)
+	}
+	return c.RenderJSON(map[string]interface{}{
+		"info": &e,
+	})
+}
+
+func (c Employee) Edit(e models.EEmployee) revel.Result {
+	info, err := entities.EEmployee.
+		WithContext(c.Request.Context()).
+		Where(entities.EEmployee.ID.Eq(e.ID)).
+		Updates(&e)
+	if err != nil {
+		return c.RenderError(err)
+	}
+	return c.RenderJSON(map[string]interface{}{
+		"code": 1,
+		"tip":  "ok",
 		"info": info,
 	})
 }

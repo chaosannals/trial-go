@@ -38,3 +38,9 @@ gentool -db mysql -dsn "root:password@tcp(localhost:3306)/exert?charset=utf8mb4&
 ```
 
 注：digdemo 也有 gorm 的示例，不过是基于 echo + dig
+
+
+## test 和 faker
+
+测试使用了 faker 来生成测试数据。
+重新生成模型时要注意，faker 需要在模型里写注解配置，这样导致重新生成模型会被覆盖。

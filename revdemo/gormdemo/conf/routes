@@ -13,6 +13,8 @@ POST    /login                                  Sign.Login
 
 GET     /employee/find                          Employee.Find
 GET     /employee/info/:id                      Employee.Info
+PUT     /employee/add                           Employee.Add
+POST    /employee/edit                          Employee.Edit
 
 # 深目录控制器
 GET     /deep/depth/do-deep                     Depth.DoDeep
