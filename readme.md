@@ -11,6 +11,17 @@ go env -w GOPROXY=https://goproxy.io,direct
 go env -w GO111MODULE=on
 ```
 
+### mod
+
+```bash
+# 开启 mod
+go env -w GO111MODULE=on
+
+# 初始化一个模块
+go mod init github.com/chaosannals/project
+```
+
+
 ## 多版本
 
 ```bash
@@ -39,4 +50,29 @@ export GOPROXY=https://mirrors.aliyun.com/goproxy/
 
 ```sh
 docker run -v /host/workspace:/workspace -e GOPROXY='https://mirrors.aliyun.com/goproxy/' -e GO111MODULE=on --name gomake gomake
+```
+
+
+## build
+
+### 交叉编译
+
+```bash
+# 设置环境变量
+env GOOS=linux GOARCH=amd64
+
+# 构建
+go build -o target
+```
+
+注：windows 下要使用 cmd 而不是 pwsh 执行，且set 变量时 && 前面的空格会被弄到变量值里面，所以不能要空格，要紧挨着。
+```cmd
+set CGO_ENABLED=0&&set GOOS=js&&set GOARCH=wasm&&go build -o game.wasm main.go
+```
+指定生成 wasm 文件。
+
+
+```bash
+# 查看支持构建的种类
+go tool dist list
 ```
