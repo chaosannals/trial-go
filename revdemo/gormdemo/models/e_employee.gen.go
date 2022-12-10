@@ -13,9 +13,9 @@ const TableNameEEmployee = "e_employee"
 // EEmployee mapped from table <e_employee>
 type EEmployee struct {
 	ID          uint64     `gorm:"column:id;type:bigint unsigned;primaryKey;autoIncrement:true" json:"id" faker:"-"`
-	Account     string     `gorm:"column:account;type:varchar(30);not null;uniqueIndex:ACCOUNT_UNIQUE,priority:1" json:"account" faker:"username"` // 账号
-	Password    *[]byte    `gorm:"column:password;type:binary(32)" json:"password" faker:"-"`
-	Nickname    *string    `gorm:"column:nickname;type:varchar(30)" json:"nickname" faker:"name"`                                     // 昵称
+	Account     string     `gorm:"column:account;type:varchar(30);not null;uniqueIndex:ACCOUNT_UNIQUE,priority:1" json:"account" faker:"username,unique,len=10"` // 账号
+	Password    *[]byte    `gorm:"column:password;type:binary(32)" json:"password" faker:"slice_len=32"`
+	Nickname    *string    `gorm:"column:nickname;type:varchar(30)" json:"nickname" faker:"lang=chi,len=10"`                                     // 昵称
 	CreatedAt   time.Time  `gorm:"column:created_at;type:datetime;not null;default:CURRENT_TIMESTAMP" json:"created_at" faker:"-"` // 创建时间
 	RemovedAt   *time.Time `gorm:"column:removed_at;type:datetime" json:"removed_at" faker:"-"`                                    // 删除时间
 	LastLoginAt *time.Time `gorm:"column:last_login_at;type:datetime" json:"last_login_at" faker:"-"`                              // 最后登录时间
