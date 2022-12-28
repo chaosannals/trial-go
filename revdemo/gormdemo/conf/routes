@@ -16,6 +16,8 @@ GET     /employee/info/:id                      Employee.Info
 PUT     /employee/add                           Employee.Add
 POST    /employee/edit                          Employee.Edit
 
+GET     /client/find                            Client.Find
+
 # 深目录控制器
 GET     /deep/depth/do-deep                     Depth.DoDeep
 

@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"gormdemo/app"
 	"gormdemo/util"
 	"reflect"
 	"strconv"
@@ -24,7 +23,7 @@ func (c App) Index() revel.Result {
 	c.ViewArgs["pointer"] = unsafe.Pointer(&c)
 	c.ViewArgs["intp"] = strconv.Itoa(*c.IntPtr)
 	revel.AppLog.Info(fmt.Sprintf("intp: %d", *c.IntPtr))
-	app.Log.Infof("---------------- %d", *c.IntPtr)
+	//app.Log.Infof("---------------- %d", *c.IntPtr)
 	return c.Render()
 }
 

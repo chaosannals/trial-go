@@ -40,6 +40,7 @@ func init() {
 		revel.InterceptorFilter,       // Run interceptors around the action.
 		revel.CompressFilter,          // Compress the result.
 		revel.BeforeAfterFilter,       // Call the before and after filter functions
+		util.ResultControllerFilter,   // 添加一个 R 字段用来返回输出，必须在 某个Filter（目前不确定）之后，不然 AppController 不是 controllers 定义的最终类型，无法转换接口。
 		revel.ActionInvoker,           // Invoke the action.
 	}
 

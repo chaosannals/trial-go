@@ -5,6 +5,13 @@
 ```bash
 revel run
 # /@tests 下是接口测试
+
+# 打包
+revel package
+
+# 修改环境变量（golang 的编译参数），指定平台打包。
+# GOOS=linux GOARCH=amd64
+revel package
 ```
 
 ## 两种数据库管理的方式 GEN 和 GEN TOOL

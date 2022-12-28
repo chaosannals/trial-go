@@ -31,3 +31,17 @@ func (r MyResult) Apply(req *revel.Request, resp *revel.Response) {
 		revel.AppLog.Error("Apply: Response write failed", "error", err)
 	}
 }
+
+/////////////////////////////////////////////////////////
+
+type ResultControl interface {
+	Init()
+}
+
+func ResultControllerFilter(c *revel.Controller, filterChain []revel.Filter) {
+	if r, ok := c.AppController.(ResultControl); ok {
+		r.Init()
+	}
+
+	filterChain[0](c, filterChain[1:])
+}
