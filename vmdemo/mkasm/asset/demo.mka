@@ -1,0 +1,5 @@
+push_const "hello: 1 + 2 = %d"
+push_int 1
+push_int 2
+add_int
+call print
