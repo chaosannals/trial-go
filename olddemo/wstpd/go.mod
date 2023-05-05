@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/gin-gonic/gin v1.7.2
+	github.com/gin-gonic/gin v1.9.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/joho/godotenv v1.3.0
 	github.com/jonboulle/clockwork v0.2.2 // indirect
