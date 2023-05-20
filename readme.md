@@ -11,7 +11,7 @@ go env -w GOPROXY=https://goproxy.io,direct
 go env -w GO111MODULE=on
 ```
 
-### mod
+### mod 模块
 
 ```bash
 # 开启 mod
@@ -19,8 +19,23 @@ go env -w GO111MODULE=on
 
 # 初始化一个模块
 go mod init github.com/chaosannals/project
+
+# 清理 go.mod 依赖
+go mod tidy
 ```
 
+### work 工作区
+
+```bash
+# 初始化一个工作区在当前（空）
+go work init
+
+# 指定第一个 mod 目录 需要先用 mod 命令初始化
+go work init ./moddir
+
+# 添加 mod 进入 work
+go work use ./moddir
+```
 
 ## 多版本
 
