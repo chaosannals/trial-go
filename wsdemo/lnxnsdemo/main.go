@@ -14,8 +14,11 @@ import (
 func main() {
 	simple.DoSome()
 	cmd := exec.Command("sh")
+
+	// syscall.CLONE_NEWUTS 克隆出新的 UTS 此时 hostname 是隔离的
+	// syscall.CLONE_NEWIPC 克隆出新的 IPC
 	cmd.SysProcAttr = &syscall.SysProcAttr{
-		Cloneflags: syscall.CLONE_NEWUTS,
+		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWIPC,
 	}
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
