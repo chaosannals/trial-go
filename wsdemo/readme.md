@@ -69,3 +69,46 @@ ifconfig
 ```
 
 ## Cgroups 资源【限制】
+
+附录：类比 Windows 下 JobObject 
+
+- task 进程 或 线程
+- subsystem 子系统，具体资源控制器
+- cgroup  关联 task 和 subsystem 的表示
+- hierarchy 层级树，可以挂多个 subsystem
+
+
+```bash
+# 老版本
+apt-get install cgroup-bin
+
+# 新版本
+apt install cgroup-tools
+
+# 列举子系统 lssubsys 命令 cgroup-tools 工具集提供
+lssubsys -a
+```
+
+```bash
+# 查看 进程 控制组 信息
+cat /proc/cgroups
+
+# 挂载 cgroup
+mount -t cgroup -o none,name=cgroup-test cgroup-test ./cgroup-test
+
+# 列举控制组
+ls ./cgroup-test
+
+# 到 cgroup 目录下创建的目录也是 cgroup 类型的 子 cgroup
+cd ./cgroup-test
+mkdir cgroup-1
+mkdir cgroup-2
+
+# 查看当前 PID
+echo $$
+# 查看进程 cgroup
+cat /proc/[pid]/cgroup
+
+# 把进程挂载到 子 cgroup
+sh -c "echo $$ >> ./cgroup-1/tasks"
+```
