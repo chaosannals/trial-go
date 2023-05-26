@@ -128,10 +128,17 @@ mount | grep memory
 #      --vm-hang N 分配到内存后随眠 N 秒
 #      --vm-keep  一直占用内存
 # 其他自行查阅 -h
-# 启动一个 stress 进程 200M 内存
+
+# 启动一个 stress 进程 200M 内存，会占用 sh
 stress --vm-bytes 200m --vm-keep -m 1
 
+# 打开其他终端用 top 查看内存可以发现此 stress 的 sh 占用 200m 内存。
+top
+
+# 关闭 stress 后执行以下
+
 # 在 /sys/fs/cgroup/memory 子系统里面建子 cgroup 并进入
+cd /sys/fs/cgroup/memory
 mkdir test-limit-memory
 cd test-limit-memory
 
@@ -140,5 +147,13 @@ sudo sh -c "echo '100m' > memory.limit_in_bytes"
 
 # 把当前进程挂到 cgroup 上去，此时当前的 sh 被新的 test-limit-memory 限制内存。
 sudo sh -c "echo $$ > tasks" 
+
+# 这个好像可以不用，只挂 tasks 即可。
 sudo sh -c "echo $$ > cgroup.procs" 
+
+# 再次启动一个 stress 进程 200M 内存，会占用 sh
+stress --vm-bytes 200m --vm-keep -m 1
+
+# 打开其他终端用 top 查看内存可以发现此 stress 的 sh 占用 100m 内存。
+top
 ```
