@@ -157,3 +157,54 @@ stress --vm-bytes 200m --vm-keep -m 1
 # 打开其他终端用 top 查看内存可以发现此 stress 的 sh 占用 100m 内存。
 top
 ```
+
+## AUFS
+
+```bash
+# 创建挂载目录
+mkdir mnt
+# 创建容器文件
+mkdir container-layer &&  echo "container layer." > ./container-layer/container-layer.txt
+mkdir image-1 && echo "iamge layer 1" > ./image-1/image-1.txt
+mkdir image-2 && echo "iamge layer 2" > ./image-2/image-2.txt
+mkdir image-3 && echo "iamge layer 3" > ./image-3/image-3.txt
+mkdir image-4 && echo "iamge layer 4" > ./image-4/image-4.txt
+
+# 查看操作系统支持的文件系统
+ls /sys/fs/ -al
+
+# 安装 aufs-tools , ubuntu22.04 删了它。
+apt update
+apt install aufs-tools
+
+# vbox 和 wsl2 都可以通过下面安装
+apt install linux-image-extra-virtual
+# vbox 可以使用，WSL2 不能上 aufs，下面命令会提示找不到 windows-wsl2 的包
+modprobe aufs
+
+# AUFS 挂载
+mount -t aufs -o dirs=./container-layer:./image-4:.image-3:./image-2:./image-1 none ./mnt
+
+# 执行后文件被挂载到 ./mnt 里面, mount 的是目录，但是是目录里的文件被挂进去了。分层次的。
+ls ./mnt -al
+
+# 此时可以在文件系统 aufs 看到一条此挂载目录的信息 si_xxxx。
+# 列举
+ls /sys/fs/aufs
+
+# 打印 aufs 配置
+cat /sys/fs/aufs/config
+
+# 打印信息
+cat /sys/fs/aufs/<siid>/*
+
+# 往 mnt image-1.txt 写入信息。
+echo "append to image-1" >> ./mnt/image-1.txt
+
+# 此时 原本 image-1/image-1.txt 不变
+cat ./image-1/image-1.txt
+
+# container-layer 目录多出修改文件 image-1.txt
+ls ./container-layer
+cat ./container-layer/image-1.txt
+```
