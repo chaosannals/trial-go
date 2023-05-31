@@ -208,3 +208,13 @@ cat ./image-1/image-1.txt
 ls ./container-layer
 cat ./container-layer/image-1.txt
 ```
+
+
+```bash
+# vbox 虚拟机要使用共享需要安装插件
+# host 是 Windows 下共享文件夹正常，粘贴板好像几个版本都是有问题的，不管是虚拟的是 windows 还是 ubuntu
+apt install virtualbox-guest-utils
+
+# ubuntu 安装 golang 也可以去官网下载 bin 版本解压配置路径，很麻烦，没下面简单。
+apt  install golang-go
+```
