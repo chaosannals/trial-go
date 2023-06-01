@@ -1,2 +1,6 @@
-mydocker*
-*.exe
+*
+!/container/
+!.gitignore
+!*.mod
+!*.sum
+!*.go

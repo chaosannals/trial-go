@@ -11,6 +11,22 @@ go env -w GOPROXY=https://goproxy.io,direct
 go env -w GO111MODULE=on
 ```
 
+### build 和 run
+
+```bash
+# 构建当前项目
+go build .
+
+# 构建项目指定入口文件
+go build main.go
+
+# 执行当前项目
+go run .
+
+# 执行项目指定入口文件
+go run main.go
+```
+
 ### mod 模块
 
 ```bash

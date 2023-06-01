@@ -5,6 +5,7 @@ import (
 	"github.com/urfave/cli"
 	"os"
 	"fmt"
+	"github.com/chaosannals/mydocker/container"
 )
 
 const usage = `my docker usage.`
@@ -22,9 +23,9 @@ var runCommand = cli.Command {
 		if len(context.Args()) < 1 {
 			return fmt.Errorf("Missing container command")
 		}
-		//cmd := context.Args().Get(0)
-		//tty := context.Bool("ti")
-		//Run(tty, cmd)
+		cmd := context.Args().Get(0)
+		tty := context.Bool("ti")
+		container.Run(tty, cmd)
 		return nil
 	},
 }
@@ -37,9 +38,8 @@ var initCommand = cli.Command {
 		cmd := context.Args().Get(0)
 
 		log.Infof("command %s", cmd)
-		return nil
-		//err := container.RunContainerInitProcess(cmd, nil)
-		//return err
+		err := container.RunContainerInitProcess(cmd, nil)
+	return err
 	},
 }
 
