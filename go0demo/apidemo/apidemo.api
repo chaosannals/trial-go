@@ -1,3 +1,12 @@
+syntax = "v1"
+
+info (
+	title: "demo"
+	desc: "yet a api demo."
+	author: "chaosannals"
+	email: "chaosannals@outlook.com"
+)
+
 type Request {
 	Name string `path:"name,options=you|me"`
 }
@@ -6,7 +15,63 @@ type Response {
 	Message string `json:"message"`
 }
 
+// service 可以多个，但是名字必须一致 这里是 apidemo-api
 service apidemo-api {
 	@handler ApidemoHandler
 	get /from/:name(Request) returns (Response)
+}
+
+///////////////////////////////////////////////////////////////////////
+
+type UserInfo {
+	Name string `path:"name,options=aaaa|bbbb"`
+}
+
+// 多个 type
+type (
+	UserGetRequest {
+		UserId int `json:"userId"`
+	}
+
+	UserGetResponse {
+		Message string   `json:"message"`
+		Data    UserInfo `json:"data"`
+	}
+)
+
+type UserAddRequest {
+	Data UserInfo `json:"data"`
+}
+
+type UserAddResponse {
+	UserId  int    `json:"userId"`
+	Message string `json:"message"`
+}
+
+@server (
+	// 代表当前 service 代码块下的所有路由均需要 jwt 鉴权
+	// goctl 生成代码时会将当前 service 代码块下的接口
+	// 信息添加上 jwt 相关代码，Auth 值为 jwt 密钥，过期
+	// 等信息配置的 golang 结构体名称
+	// jwt: Auth
+
+	// 定义一个鉴权控制的中间件，多个中间件以英文逗号,分割，如 Middleware1,Middleware2,中间件按声明顺序执行
+	// middleware: AuthInterceptor
+
+	// 代表当前 service 代码块下的路由生成代码时都会被放到 user 目录下
+	group: user
+	// 定义路由前缀为 "/v1"
+	prefix: /v1
+	// 定义一个超时时长为 4 秒的超时配置，这里可填写为 time.Duration 的字符串形式，详情可参考
+	// https://pkg.go.dev/time#Duration.String
+	timeout: 4s
+	// 定义一个请求体限制在 1MB 以内的请求，goctl >= 1.5.0 版本支持
+	maxBytes: 1048576
+) // service 可以多个，但是名字必须一致 这里是 apidemo-api
+service apidemo-api {
+	@handler GetUser
+	get /users/id/:userId(UserGetRequest) returns(UserGetResponse)
+
+	@handler AddUser
+	post /users/add(UserAddRequest) returns(UserAddResponse)
 }

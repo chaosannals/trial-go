@@ -3,7 +3,9 @@ package handler
 
 import (
 	"net/http"
+	"time"
 
+	user "apidemo/internal/handler/user"
 	"apidemo/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
@@ -18,5 +20,23 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Handler: ApidemoHandler(serverCtx),
 			},
 		},
+	)
+
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/users/id/:userId",
+				Handler: user.GetUserHandler(serverCtx),
+			},
+			{
+				Method:  http.MethodPost,
+				Path:    "/users/add",
+				Handler: user.AddUserHandler(serverCtx),
+			},
+		},
+		rest.WithPrefix("/v1"),
+		rest.WithTimeout(4000*time.Millisecond),
+		rest.WithMaxBytes(1048576),
 	)
 }
