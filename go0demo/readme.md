@@ -20,6 +20,9 @@ go mod tidy
 # 启动 go 程序
 go run apidemo.go
 
+# 创建 api 文件
+goctl api -o newsrcfile.api
+
 # api 文件生成 golang 代码，生成文件存在就不生成。
 goctl api go --dir . --api apidemo.api
 
@@ -28,4 +31,12 @@ goctl api doc --dir . --o ./docs
 
 # api 文件格式化当前目录所有 *.api 文件
 goctl api format --dir .
+```
+
+```bash
+# 创建 grpc 项目
+goctl rpc new grpcdemo
+
+# 创建 grpc 文件
+goctl rpc --o greet.proto
 ```
