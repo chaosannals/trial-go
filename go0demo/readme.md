@@ -37,12 +37,24 @@ goctl api doc --dir . --o ./docs
 goctl api format --dir .
 ```
 
+此框架不支持多 proto 文件，多文件仍然会导致多个 main 被生成。
+这种应该是和其 api 文件统一，不过这样就比原 grpc 差了。
+grpc 多 proto 文件相较下就要清晰。
+不过这样的框架应该可以通过拆分多个微服务，这样不至于单文件内容过多。
+
+还会生成客户端代码，这个是服务端不需要的。
+
 ```bash
 # 创建 grpc 项目
 goctl rpc new grpcdemo
 
 # 创建 grpc 文件
 goctl rpc --o greet.proto
+
+# 单个 rpc 服务生成示例指令
+goctl rpc protoc greet.proto --go_out=./pb --go-grpc_out=./pb --zrpc_out=.
+# 多个 rpc 服务生成示例指令
+goctl rpc protoc greet.proto --go_out=./pb --go-grpc_out=./pb --zrpc_out=. -m
 ```
 
 
