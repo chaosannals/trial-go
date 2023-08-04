@@ -1,5 +1,7 @@
 # [go-zero](https://go-zero.dev/) Demo
 
+目前 model 只支持 mysql mongo pg ，没有支持 sqlite 。
+
 ```bash
 # 安装脚手架工具
 go install github.com/zeromicro/go-zero/tools/goctl@latest
