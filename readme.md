@@ -56,8 +56,11 @@ go work use ./moddir
 ## 多版本
 
 ```bash
-# 拉后会在 GOPATH 的 bin 目录下看到，有的会多层平台文件夹里面。
+# 拉后会在 GOPATH 的 bin 目录下看到，有的会多层平台文件夹里面。(旧版本)
 go get golang.org/dl/go1.17
+
+# 新版本 get 命令分化出来 install 命令。
+go install golang.org/dl/go1.17
 
 # 然后通过该版本执行特定的命令前，必须先下载。
 go1.17 download
@@ -115,4 +118,17 @@ set CGO_ENABLED=0&&set GOOS=js&&set GOARCH=wasm&&go build -o game.wasm main.go
 ```bash
 # 查看支持构建的种类
 go tool dist list
+```
+
+## go generate
+
+只要写在注释里 就会被归并，并在执行 go generate 时执行
+
+```go
+//go:generate command arg1 arg2
+```
+
+```bash
+# 执行生成脚本并执行构建
+go generate && go build
 ```
