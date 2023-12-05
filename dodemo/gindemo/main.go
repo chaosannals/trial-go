@@ -20,6 +20,7 @@ func main() {
 
 	// grpc
 	do.Provide(injector, services.NewGrpcServer)
+	do.Provide(injector, services.NewApisHelloClientService)
 
 	// gin
 	do.Provide(injector, services.NewGinService)
