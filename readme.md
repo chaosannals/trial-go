@@ -59,7 +59,7 @@ go work use ./moddir
 # 拉后会在 GOPATH 的 bin 目录下看到，有的会多层平台文件夹里面。(旧版本)
 go get golang.org/dl/go1.17
 
-# 新版本 get 命令分化出来 install 命令。
+# 新版本 get 命令分化出来 install 命令。(这个命令在 powershell 会失败，只能在 cmd 执行)
 go install golang.org/dl/go1.17
 
 # 然后通过该版本执行特定的命令前，必须先下载。
