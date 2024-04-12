@@ -11,6 +11,7 @@ import (
 )
 
 const (
+	// 这些相对于整个文件偏移量
 	BIG_BLOCK_DEPOT_BLOCKS_POS     = 0x4C
 	NUM_BIG_BLOCK_DEPOT_BLOCKS_POS = 0x2C // 块总量位置
 	ROOT_START_BLOCK_POS           = 0x30 // 根开始块ID 位置
@@ -18,7 +19,14 @@ const (
 	EXTENSION_BLOCK_POS            = 0x44
 	NUM_EXTENSION_BLOCK_POS        = 0x48
 
-	BIG_BLOCK_SIZE = 0x200
+	// 这些是相对与 data 各个块内 的偏移量
+	SIZE_OF_NAME_POS = 0x40
+	TYPE_POS         = 0x42
+	START_BLOCK_POS  = 0x74
+	SIZE_POS         = 0x78
+
+	BIG_BLOCK_SIZE              = 0x200
+	PROPERTY_STORAGE_BLOCK_SIZE = 0x80
 )
 
 func GetInt4d(all []byte, pos int) (int32, error) {
@@ -72,6 +80,8 @@ func readData(all []byte, bigBC []byte, block int32) ([]byte, error) {
 	for block != -2 {
 		pos := (block + 1) * BIG_BLOCK_SIZE
 		result = append(result, all[pos:pos+BIG_BLOCK_SIZE])
+
+		// TODO 这里取下一个也是 block * 4 不理解
 		b, err := GetInt4d(bigBC, int(block*4))
 		if err != nil {
 			return nil, err
@@ -83,6 +93,37 @@ func readData(all []byte, bigBC []byte, block int32) ([]byte, error) {
 		copy(bytes[i*BIG_BLOCK_SIZE:(i+1)*BIG_BLOCK_SIZE], v)
 	}
 	return bytes, nil
+}
+
+func readPropertySets(data []byte) error {
+
+	dataLen := len(data)
+	for offset := 0; offset < dataLen; {
+		d := data[offset : offset+PROPERTY_STORAGE_BLOCK_SIZE]
+
+		nameSize := int(d[SIZE_OF_NAME_POS]) | (int(d[SIZE_OF_NAME_POS+1]) << 8)
+
+		dType := int(d[TYPE_POS])
+		fmt.Printf("d type: %d\n", dType)
+
+		startBlock, err := GetInt4d(d, START_BLOCK_POS)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("d startBlock: %d\n", startBlock)
+
+		size, err := GetInt4d(d, SIZE_POS)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("d size: %d\n", size)
+
+		name := d[0:nameSize]
+		fmt.Printf("d name: %s\n", name)
+
+		offset += PROPERTY_STORAGE_BLOCK_SIZE
+	}
+	return nil
 }
 
 func main() {
@@ -154,7 +195,7 @@ func main() {
 	fmt.Printf("bbdBlocks: %d \n", bbdBlocks)
 
 	pos := BIG_BLOCK_DEPOT_BLOCKS_POS
-	bigBlockDepotBlocks := make([]int32, bbdBlocks)
+	bigBlockDepotBlocks := make([]int32, bbdBlocks) // 只是索引
 	for i := 0; i < int(bbdBlocks); i += 1 {
 		bbdPos, err := GetInt4d(xlsBytes, pos)
 		if err != nil {
@@ -211,4 +252,9 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("data len: %d\n", len(entry))
+
+	err = readPropertySets(entry)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
