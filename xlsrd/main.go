@@ -8,6 +8,9 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"golang.org/x/net/html/charset"
 )
 
 const (
@@ -98,7 +101,7 @@ func readData(all []byte, bigBC []byte, block int32) ([]byte, error) {
 func readPropertySets(data []byte) error {
 
 	dataLen := len(data)
-	for offset := 0; offset < dataLen; {
+	for offset := 0; offset < dataLen; offset += PROPERTY_STORAGE_BLOCK_SIZE {
 		d := data[offset : offset+PROPERTY_STORAGE_BLOCK_SIZE]
 
 		nameSize := int(d[SIZE_OF_NAME_POS]) | (int(d[SIZE_OF_NAME_POS+1]) << 8)
@@ -118,10 +121,32 @@ func readPropertySets(data []byte) error {
 		}
 		fmt.Printf("d size: %d\n", size)
 
-		name := d[0:nameSize]
-		fmt.Printf("d name: %s\n", name)
+		name := string(d[0:nameSize])
+		// fmt.Printf("d name bytes %v \n", d[0:nameSize])
+		// fmt.Printf("WORKBOOK: %v\n", []byte("WORKBOOK"))
+		fmt.Printf("d name(%d): %s\n", len(name), name)
+		nameEncoding, nameEncodingName, certain := charset.DetermineEncoding(d[0:nameSize], "")
+		fmt.Printf("d name encoding: %s %v %t \n", nameEncodingName, nameEncoding, certain)
+		// transform.NewReader(d[0:nameSize], nameEncoding.NewEncoder())
+		// transform.String(nameEncoding.NewEncoder().Transformer,
 
-		offset += PROPERTY_STORAGE_BLOCK_SIZE
+		upName := strings.ToUpper(name)
+		fmt.Printf("up name(%d): %s\n", len(upName), upName)
+
+		// (BIFF5 uses Book, BIFF8 uses Workbook)
+		if strings.Compare(upName, "WORKBOOK") == 0 || strings.Compare(upName, "BOOK") == 0 {
+			workbook := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("workbook: %d\n", workbook)
+		} else if upName == "ROOT ENTRY" || upName == "R" {
+			rootentry := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("rootentry: %d\n", rootentry)
+		} else if name == "SummaryInformation" {
+			summaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("summaryInfo: %d\n", summaryInfo)
+		} else if name == "DocumentSummaryInformation" {
+			docSummaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("docSummaryInfo: %d\n", docSummaryInfo)
+		}
 	}
 	return nil
 }
