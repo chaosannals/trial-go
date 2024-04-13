@@ -1,3 +1,7 @@
+github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394 h1:OYA+5W64v3OgClL+IrOD63t4i/RW7RqrAVl9LTZ9UqQ=
+github.com/axgle/mahonia v0.0.0-20180208002826-3358181d7394/go.mod h1:Q8n74mJTIgjX4RBBcHnJ05h//6/k6foqmgE45jTQtxg=
+github.com/qiniu/iconv v1.2.0 h1:2LJKwoF+4LJ3lNM+7cE3P1kNQzAI/HMZuWhkmFoY2U8=
+github.com/qiniu/iconv v1.2.0/go.mod h1:5bxb2h9lptZt2eHLgY+Jw4X06TMtKb6tvvok0DwSwGA=
 golang.org/dl v0.0.0-20240403152604-14e4fcb94860 h1:9g5WE4dK7khgYZbai0ctoUrwdOy6k/2piYFzJv6zRks=
 golang.org/dl v0.0.0-20240403152604-14e4fcb94860/go.mod h1:fwQ+hlTD8I6TIzOGkQqxQNfE2xqR+y7SzGaDkksVFkw=
 golang.org/x/net v0.24.0 h1:1PcaxkF854Fu3+lvBIx5SYn9wRlBzzcnHZSiaFFAb0w=

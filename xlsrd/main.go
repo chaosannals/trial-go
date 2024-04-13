@@ -4,13 +4,17 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"log"
 	"math"
 	"os"
 	"path/filepath"
 	"strings"
 
+	// "github.com/qiniu/iconv"
+	"github.com/axgle/mahonia"
 	"golang.org/x/net/html/charset"
+	"golang.org/x/text/transform"
 )
 
 const (
@@ -124,9 +128,38 @@ func readPropertySets(data []byte) error {
 		name := string(d[0:nameSize])
 		// fmt.Printf("d name bytes %v \n", d[0:nameSize])
 		// fmt.Printf("WORKBOOK: %v\n", []byte("WORKBOOK"))
+
+		// 这个转换不报错，却无效。
 		fmt.Printf("d name(%d): %s\n", len(name), name)
 		nameEncoding, nameEncodingName, certain := charset.DetermineEncoding(d[0:nameSize], "")
 		fmt.Printf("d name encoding: %s %v %t \n", nameEncodingName, nameEncoding, certain)
+		nameReader := bytes.NewReader(d[0:nameSize])
+		nameUtf8Reader := transform.NewReader(nameReader, nameEncoding.NewDecoder())
+		nameUtf8Bytes, err := io.ReadAll(nameUtf8Reader)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("d utf8 name(%d): %s\n", len(nameUtf8Bytes), nameUtf8Bytes)
+
+		mEnc := mahonia.NewEncoder(nameEncodingName)
+		mName := mEnc.ConvertString("Root Entry")
+		fmt.Printf("d mahonia name(%d): %s\n", len(mName), mName)
+
+		// 这个库依赖 C 代码
+		// qnIconv, err := iconv.Open("utf-8", nameEncodingName)
+		// if err != nil {
+		// 	return err
+		// }
+		// defer qnIconv.Close()
+		// qnNameReader := bytes.NewReader(d[0:nameSize])
+		// qnR := iconv.NewReader(qnIconv, qnNameReader, nameSize)
+		// qnNameBytes, err := io.ReadAll(qnR)
+		// if err != nil {
+		// 	return err
+		// }
+		// fmt.Printf("d qn name(%d): %s\n", len(qnNameBytes), qnNameBytes)
+
 		// transform.NewReader(d[0:nameSize], nameEncoding.NewEncoder())
 		// transform.String(nameEncoding.NewEncoder().Transformer,
 
