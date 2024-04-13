@@ -94,6 +94,20 @@ func ReadData(all []byte, bigBC []byte, block int32) ([]byte, error) {
 	return bytes, nil
 }
 
+// 这些标签是固定字符集(不确定是否是 Windows 1252，参考 PHPSpreadSheet 做了类似处理)
+func GetNameTag(data []byte) string {
+	result := make([]byte, len(data))
+	j := 0
+	for i, v := range data {
+		if (i == 0 && v == 5) || (v == 0) {
+			continue
+		}
+		result[j] = v
+		j += 1
+	}
+	return string(result[0:j])
+}
+
 func ReadPropertySets(data []byte) error {
 
 	dataLen := len(data)
@@ -118,7 +132,9 @@ func ReadPropertySets(data []byte) error {
 		fmt.Printf("d size: %d\n", size)
 
 		name := string(d[0:nameSize])
-		upName := strings.ToUpper(name)
+		fmt.Printf("name(%d): %s %v\n", len(name), name, d[0:nameSize])
+		tag := GetNameTag(d[0:nameSize])
+		upName := strings.ToUpper(tag)
 		fmt.Printf("up name(%d): %s\n", len(upName), upName)
 
 		// (BIFF5 uses Book, BIFF8 uses Workbook)
@@ -128,10 +144,10 @@ func ReadPropertySets(data []byte) error {
 		} else if upName == "ROOT ENTRY" || upName == "R" {
 			rootentry := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("rootentry: %d\n", rootentry)
-		} else if name == "SummaryInformation" {
+		} else if tag == "SummaryInformation" {
 			summaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("summaryInfo: %d\n", summaryInfo)
-		} else if name == "DocumentSummaryInformation" {
+		} else if tag == "DocumentSummaryInformation" {
 			docSummaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("docSummaryInfo: %d\n", docSummaryInfo)
 		}
