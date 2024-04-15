@@ -28,6 +28,16 @@ const (
 	PROPERTY_STORAGE_BLOCK_SIZE = 0x80
 )
 
+func GetUInt2d(all []byte, pos int) (int16, error) {
+	if pos < 0 {
+		return 0, fmt.Errorf("无效位置：%d", pos)
+	}
+
+	o0 := int16(all[pos])
+	o8 := int16(all[pos+1]) << 8
+	return o0 | o8, nil
+}
+
 func GetInt4d(all []byte, pos int) (int32, error) {
 	if pos < 0 {
 		return 0, fmt.Errorf("无效位置：%d", pos)
@@ -42,15 +52,16 @@ func GetInt4d(all []byte, pos int) (int32, error) {
 	if len < (pos + 4) {
 		o24 = 0
 	} else {
-		o24 = int32(all[pos+3])
-		if o24 >= 128 {
-			o24 = -int32(math.Abs(float64((256 - o24) << 24)))
-		} else {
-			o24 = (o24 & 127) << 24
-		}
+		// 这么写是因为 PHP 的整形大于 32bit，单纯位移不能使得数为负。golang int32 直接位移即可
+		// o24 = int32(all[pos+3])
+		// if o24 >= 128 {
+		// 	o24 = -int32(math.Abs(float64((256 - o24) << 24)))
+		// } else {
+		// 	o24 = (o24 & 127) << 24
+		// }
 
 		// 与上面的区别不知道是什么。可能是语言问题，golang 应该下面这个就可以。
-		// o24 = int32(all[pos+3]) << 24
+		o24 = int32(all[pos+3]) << 24
 	}
 
 	if len < (pos + 3) {
