@@ -25,7 +25,10 @@ const (
 	SIZE_POS         = 0x78
 
 	BIG_BLOCK_SIZE              = 0x200
+	SMALL_BLOCK_SIZE            = 0x40
 	PROPERTY_STORAGE_BLOCK_SIZE = 0x80
+
+	SMALL_BLOCK_THRESHOLD = 0x1000
 )
 
 func GetUInt2d(all []byte, pos int) (int16, error) {
@@ -305,9 +308,30 @@ func ReadXls(xlsPath string) (*XlsBook, error) {
 		return nil, err
 	}
 
-	return &XlsBook{
+	book := &XlsBook{
 		bigBlockChain:   bigBlockChain,
 		smallBlockChain: smallBlockChain,
 		PropertySets:    ps,
-	}, nil
+		entry:           entry,
+		xlsBytes:        xlsBytes,
+	}
+	bd, err := book.ReadStream(int32(*book.PropertySets.WorkBookId))
+	if err != nil {
+		return nil, err
+	}
+	book.Data = bd
+
+	bsi, err := book.ReadStream((int32(*book.PropertySets.SummaryInfoId)))
+	if err != nil {
+		return nil, err
+	}
+	book.SummaryInfo = bsi
+
+	bdsi, err := book.ReadStream(int32(*book.PropertySets.DocumentSummaryInfoId))
+	if err != nil {
+		return nil, err
+	}
+	book.DocumentSummaryInfo = bdsi
+
+	return book, nil
 }
