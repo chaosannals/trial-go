@@ -119,8 +119,14 @@ func GetNameTag(data []byte) string {
 	return string(result[0:j])
 }
 
-func ReadPropertySets(data []byte) error {
-
+func ReadPropertySets(data []byte) (*XlsBookPropertySets, error) {
+	result := &XlsBookPropertySets{
+		WorkBookId:            nil,
+		RootEntryId:           nil,
+		SummaryInfoId:         nil,
+		DocumentSummaryInfoId: nil,
+		All:                   make([]XlsBookProperty, 0),
+	}
 	dataLen := len(data)
 	for offset := 0; offset < dataLen; offset += PROPERTY_STORAGE_BLOCK_SIZE {
 		d := data[offset : offset+PROPERTY_STORAGE_BLOCK_SIZE]
@@ -132,13 +138,13 @@ func ReadPropertySets(data []byte) error {
 
 		startBlock, err := GetInt4d(d, START_BLOCK_POS)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		fmt.Printf("d startBlock: %d\n", startBlock)
 
 		size, err := GetInt4d(d, SIZE_POS)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		fmt.Printf("d size: %d\n", size)
 
@@ -148,54 +154,65 @@ func ReadPropertySets(data []byte) error {
 		upName := strings.ToUpper(tag)
 		fmt.Printf("up name(%d): %s\n", len(upName), upName)
 
+		result.All = append(result.All, XlsBookProperty{
+			Name:     name,
+			Size:     size,
+			TypeId:   dType,
+			StartPos: startBlock,
+		})
+
 		// (BIFF5 uses Book, BIFF8 uses Workbook)
 		if strings.Compare(upName, "WORKBOOK") == 0 || strings.Compare(upName, "BOOK") == 0 {
 			workbook := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("workbook: %d\n", workbook)
+			result.WorkBookId = &workbook
 		} else if upName == "ROOT ENTRY" || upName == "R" {
 			rootentry := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("rootentry: %d\n", rootentry)
+			result.RootEntryId = &rootentry
 		} else if tag == "SummaryInformation" {
 			summaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("summaryInfo: %d\n", summaryInfo)
+			result.SummaryInfoId = &summaryInfo
 		} else if tag == "DocumentSummaryInformation" {
 			docSummaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
 			fmt.Printf("docSummaryInfo: %d\n", docSummaryInfo)
+			result.DocumentSummaryInfoId = &docSummaryInfo
 		}
 	}
-	return nil
+	return result, nil
 }
 
-func ReadXls(xlsPath string) error {
+func ReadXls(xlsPath string) (*XlsBook, error) {
 	xlsBytes, err := os.ReadFile(xlsPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	xlsHead := []byte{0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1}
 	head := xlsBytes[0:8]
 	if bytes.Equal(xlsHead, head) {
 		fmt.Println("有效 xls 文件头")
 	} else {
-		return fmt.Errorf("无效 xls 文件头 %s \n", hex.Dump(head))
+		return nil, fmt.Errorf("无效 xls 文件头 %s \n", hex.Dump(head))
 	}
 
 	// 开始读取定位信息
 	//
 	numBigBlockDepotBlocks, err := GetInt4d(xlsBytes, NUM_BIG_BLOCK_DEPOT_BLOCKS_POS)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Printf("全部块数量: %d \n", numBigBlockDepotBlocks)
 
 	rootStartBlock, err := GetInt4d(xlsBytes, ROOT_START_BLOCK_POS)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Printf("根开始块ID：%d\n", rootStartBlock)
 
 	sbdStartBlock, err := GetInt4d(xlsBytes, SMALL_BLOCK_DEPOT_BLOCK_POS)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if sbdStartBlock == -2 {
 		fmt.Println("没有 sbd")
@@ -204,7 +221,7 @@ func ReadXls(xlsPath string) error {
 
 	extensionBlock, err := GetInt4d(xlsBytes, EXTENSION_BLOCK_POS)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if extensionBlock == -2 {
 		fmt.Println("没有 extensionBlock")
@@ -213,7 +230,7 @@ func ReadXls(xlsPath string) error {
 
 	numExtensionBlocks, err := GetInt4d(xlsBytes, NUM_EXTENSION_BLOCK_POS)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Printf("numExtensionBlocks ：%d\n", numExtensionBlocks)
 
@@ -229,7 +246,7 @@ func ReadXls(xlsPath string) error {
 	for i := 0; i < int(bbdBlocks); i += 1 {
 		bbdPos, err := GetInt4d(xlsBytes, pos)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		fmt.Printf("bbdPos: %d\n", bbdPos)
 		bigBlockDepotBlocks[i] = bbdPos
@@ -243,7 +260,7 @@ func ReadXls(xlsPath string) error {
 		for i := bbdBlocks; i < bbdBlocks+int32(blocksToRead); i += 1 {
 			bbdiPos, err := GetInt4d(xlsBytes, pos)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			fmt.Printf("bbdiPos(%d): %d \n", i, bbdiPos)
 			pos += 4
@@ -262,26 +279,35 @@ func ReadXls(xlsPath string) error {
 	fmt.Printf("bbc 总大小: %d\n", len(bigBlockChain))
 
 	sbdBlock := sbdStartBlock
-	smallBlockChain := make([][]byte, 0)
+	smallBlockChain := make([]byte, 0)
 	for sbdBlock != -2 {
 		pos = (int(sbdBlock) + 1) * BIG_BLOCK_SIZE
 		sbdb := xlsBytes[pos : pos+BIG_BLOCK_SIZE]
-		smallBlockChain = append(smallBlockChain, sbdb)
+		smallBlockChain = append(smallBlockChain, sbdb...)
 		pos += BIG_BLOCK_SIZE
 
 		// TODO 这里 sbdBlock * 4 不理解。
 		r, err := GetInt4d(bigBlockChain, int(sbdBlock)*4)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		sbdBlock = r
 	}
 
 	entry, err := ReadData(xlsBytes, bigBlockChain, rootStartBlock)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	fmt.Printf("data len: %d\n", len(entry))
 
-	return ReadPropertySets(entry)
+	ps, err := ReadPropertySets(entry)
+	if err != nil {
+		return nil, err
+	}
+
+	return &XlsBook{
+		bigBlockChain:   bigBlockChain,
+		smallBlockChain: smallBlockChain,
+		PropertySets:    ps,
+	}, nil
 }

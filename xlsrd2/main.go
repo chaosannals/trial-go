@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"unsafe"
 
 	"github.com/chaosannals/xlsrd2/xlsrd2"
 )
@@ -16,8 +17,9 @@ func main() {
 	}
 	fmt.Println(wkDir)
 	xlsPath := filepath.Join(wkDir, "b.xls")
-	err = xlsrd2.ReadXls(xlsPath)
+	xlsBook, err := xlsrd2.ReadXls(xlsPath)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("book struct size: %d\n", unsafe.Sizeof(*xlsBook))
 }
