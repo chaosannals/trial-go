@@ -20,6 +20,7 @@ func init() {
 	iconvEncodings = map[uint16]encoding.Encoding{
 		// 367: ascii.
 		437:   charmap.CodePage437,
+		850:   charmap.CodePage850,
 		1200:  unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM), //    UTF-16 (BIFF8)
 		21010: unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM), //    UTF-16 (BIFF8) This isn"t correct, but some Excel writer libraries erroneously use Codepage 21010 for UTF-16LE
 	}
@@ -27,6 +28,17 @@ func init() {
 }
 
 func main() {
+	fmt.Println("charmap ========================================")
+	for i, t := range charmap.All {
+		cm, isOk := t.(*charmap.Charmap)
+		if isOk {
+			mid, mstr := cm.ID()
+			fmt.Printf("charmap[%d]: %s 【%v】 %s\n", i, cm.String(), mid, mstr)
+		} else {
+			fmt.Printf("charmap[%d]: is not charmap.\n", i)
+		}
+	}
+
 	for i, text := range testTexts {
 		fmt.Printf("(%d)=====================================\n", i)
 		fmt.Printf("source text: %s\n", text)
