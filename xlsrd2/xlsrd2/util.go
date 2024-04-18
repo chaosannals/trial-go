@@ -7,6 +7,9 @@ import (
 	"math"
 	"os"
 	"strings"
+
+	"golang.org/x/text/encoding/unicode"
+	"golang.org/x/text/transform"
 )
 
 const (
@@ -30,10 +33,32 @@ const (
 
 	SMALL_BLOCK_THRESHOLD = 0x1000
 
-	XLS_TYPE_BOF      = 0x0809
-	XLS_TYPE_SHEET    = 0x0085
-	XLS_TYPE_EOF      = 0x000A
-	XLS_TYPE_CODEPAGE = 0x0042
+	REKEY_BLOCK = 0x400
+
+	XLS_TYPE_FORMULA         = 0x0006
+	XLS_TYPE_EOF             = 0x000A
+	XLS_TYPE_EXTERNSHEET     = 0x0017
+	XLS_TYPE_DEFINEDNAME     = 0x0018
+	XLS_TYPE_DATEMODE        = 0x0022
+	XLS_TYPE_EXTERNNAME      = 0x0023
+	XLS_TYPE_FILEPASS        = 0x002F
+	XLS_TYPE_FONT            = 0x0031
+	XLS_TYPE_CODEPAGE        = 0x0042
+	XLS_TYPE_SHEET           = 0x0085
+	XLS_TYPE_PALETTE         = 0x0092
+	XLS_TYPE_XF              = 0x00E0
+	XLS_TYPE_MSODRAWINGGROUP = 0x00EB
+	XLS_TYPE_SST             = 0x00FC
+	XLS_TYPE_LABELSST        = 0x00FD
+	XLS_TYPE_EXTERNALBOOK    = 0x01AE
+	XLS_TYPE_NUMBER          = 0x0203
+	XLS_TYPE_LABEL           = 0x0204
+	XLS_TYPE_BOOLERR         = 0x0205
+	XLS_TYPE_RK              = 0x027E
+	XLS_TYPE_STYLE           = 0x0293
+	XLS_TYPE_FORMAT          = 0x041E
+	XLS_TYPE_BOF             = 0x0809
+	XLS_TYPE_XFEXT           = 0x087D
 
 	XLS_WORKBOOKGLOBALS = 0x0005
 	XLS_WORKSHEET       = 0x0010
@@ -41,18 +66,22 @@ const (
 	XLS_BIFF8 = 0x0600
 	XLS_BIFF7 = 0x0500
 
+	MS_BIFF_CRYPTO_NONE = 0
+	MS_BIFF_CRYPTO_XOR  = 1
+	MS_BIFF_CRYPTO_RC4  = 2
+
 	WORKSHEET_SHEETSTATE_VISIBLE    = "visible"
 	WORKSHEET_SHEETSTATE_HIDDEN     = "hidden"
 	WORKSHEET_SHEETSTATE_VERYHIDDEN = "veryHidden"
 )
 
-func GetUInt2d(all []byte, pos int) (int16, error) {
+func GetUInt2d(all []byte, pos int) (uint16, error) {
 	if pos < 0 {
 		return 0, fmt.Errorf("无效位置：%d", pos)
 	}
 
-	o0 := int16(all[pos])
-	o8 := int16(all[pos+1]) << 8
+	o0 := uint16(all[pos])
+	o8 := uint16(all[pos+1]) << 8
 	return o0 | o8, nil
 }
 
@@ -349,4 +378,101 @@ func ReadXls(xlsPath string) (*XlsBook, error) {
 	book.DocumentSummaryInfo = bdsi
 
 	return book, nil
+}
+
+func GetUtf8FromUtf16Le(source []byte, compressed bool) ([]byte, error) {
+	if compressed {
+		source = Uncompress(source)
+	}
+	fmt.Printf("GetUtf8FromUtf16Le: %d\n", len(source))
+	result, _, err := transform.Bytes(unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder(), source)
+	return result, err
+}
+
+// 解压，BIFF8 才会使用压缩。
+func Uncompress(source []byte) []byte {
+	result := make([]byte, 0)
+	for i := 0; i < len(source); i += 1 {
+		result = append(result, source[i], 0)
+	}
+	return result
+}
+
+// 带1字节长度信息 结果： 字符串数据，带头部的整体长度，错误
+func ReadUnicodeStringShort(subData []byte) ([]byte, int, error) {
+	charCount := int(subData[0])
+	v, len, err := ReadUnicodeString(subData[1:], charCount)
+	return v, len + 1, err
+}
+
+// 带2字节长度信息 结果： 字符串数据，带头部的整体长度，错误
+func ReadUnicodeStringLong(subData []byte) ([]byte, int, error) {
+	charCount, err := GetUInt2d(subData, 0)
+	if err != nil {
+		return nil, int(charCount), err
+	}
+	v, len, err := ReadUnicodeString(subData[2:], int(charCount))
+	return v, len + 2, err
+}
+
+// 结果： 字符串数据，带头部的整体长度，错误
+func ReadUnicodeString(subData []byte, chatCount int) ([]byte, int, error) {
+	// bit:0 ; 0 = compression 8bit,  1 = uncompressed 16bit
+	isCompressed := (0x01 & subData[0]) == 0
+
+	// bit:2 ;  Asian phonetic settings
+	hasAsian := (0x04 & subData[0] >> 2) == 1
+
+	// bit:3 ; Rich-Text settings
+	hasRichText := (0x08 & subData[0] >> 3) == 1
+
+	var length int
+	if isCompressed {
+		length = chatCount
+	} else {
+		length = chatCount * 2
+	}
+
+	fmt.Printf("ReadUnicodeString %t %t %t %d\n", isCompressed, hasAsian, hasRichText, length)
+
+	v, err := GetUtf8FromUtf16Le(subData[1:1+length], isCompressed)
+	return v, length + 1, err
+}
+
+func ReadByteStringStort(code uint16, v []byte) (string, error) {
+	ln := v[0]
+	return ConvToUtf8ByCode(code, v[1:1+ln])
+}
+
+var ColumnIndexStringCache map[uint16]string
+
+const ColumnIndexStringLookup = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func ColumnIndexToString(index uint16) string {
+	if ColumnIndexStringCache == nil {
+		ColumnIndexStringCache = map[uint16]string{}
+	}
+
+	r, isOk := ColumnIndexStringCache[index]
+	if isOk {
+		return r
+	}
+
+	indexValue := index
+	result := ""
+	for {
+		c := (indexValue % 26)
+		if c == 0 {
+			c = 26
+		}
+		indexValue = (indexValue - c) / 26
+		v := ColumnIndexStringLookup[c : c+1]
+		result = fmt.Sprintf("%s%s", v, result)
+		if indexValue <= 0 {
+			break
+		}
+	}
+	ColumnIndexStringCache[index] = result
+
+	return result
 }

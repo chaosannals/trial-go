@@ -1,7 +1,9 @@
 package xlsrd2
 
 import (
+	"crypto/rc4"
 	"fmt"
+	"math"
 )
 
 type XlsBookProperty struct {
@@ -19,6 +21,21 @@ type XlsBookPropertySets struct {
 	All                   []XlsBookProperty
 }
 
+type XlsBookSheet struct {
+	Name   string
+	Offset int32
+	State  string
+	Type   uint8
+}
+
+type XlsBookWorkSheet struct {
+	Name             string
+	lastColumnLetter string
+	lastColumnIdnex  uint16
+	totalRows        uint16
+	totalColumns     uint16
+}
+
 type XlsBook struct {
 	// bigBlockDepotBlockCount     int
 	// rootStartBlockId            int
@@ -34,7 +51,18 @@ type XlsBook struct {
 	Data                []byte // 对应 xls 类 data
 	SummaryInfo         []byte
 	DocumentSummaryInfo []byte
-	version int16
+	version             uint16
+
+	// TODO 加密部分不可靠
+	encryption         int
+	encryptionStartPos int32
+	rc4Pos             int
+	rc4Cipher          *rc4.Cipher
+
+	codePageCode uint16
+	codePage     string
+
+	Sheets []XlsBookSheet
 }
 
 func (i *XlsBook) ReadStream(id int32) ([]byte, error) {
@@ -96,16 +124,21 @@ func (i *XlsBook) ReadStream(id int32) ([]byte, error) {
 	return streamData, nil
 }
 
-func (i *XlsBook) ListWookSheetNames() ([]string, error) {
+func (i *XlsBook) ListWookSheetNames() ([]*XlsBookWorkSheet, error) {
 	dLen := len(i.Data)
 	pos := 0
-	sheets := make([]string, 0)
+	sheets := make([]*XlsBookWorkSheet, 0)
 
+	fmt.Printf("ListWookSheetNames: %d\n", dLen)
+
+Loop1:
 	for pos < dLen {
+		// fmt.Printf("ListWookSheetNames loop: %d\n", pos)
 		code, err := GetUInt2d(i.Data, pos)
 		if err != nil {
 			return sheets, err
 		}
+		// fmt.Printf("ListWookSheetNames code: %d %d\n", pos, code)
 		switch code {
 		case XLS_TYPE_BOF:
 			p, err := i.ReadBof(pos)
@@ -121,8 +154,114 @@ func (i *XlsBook) ListWookSheetNames() ([]string, error) {
 			}
 			pos = p
 			break
+		case XLS_TYPE_EOF:
+			p, err := i.ReadDefault(pos)
+			if err != nil {
+				return sheets, err
+			}
+			pos = p
+			break Loop1
+		case XLS_TYPE_CODEPAGE:
+			p, err := i.ReadCodePage(pos)
+			if err != nil {
+				return sheets, err
+			}
+			pos = p
+			break
+		default:
+			p, err := i.ReadDefault(pos)
+			if err != nil {
+				return sheets, err
+			}
+			pos = p
+			break
 		}
 	}
+
+	fmt.Printf("fetch worksheet (%d) info.\n", len(i.Sheets))
+	// TODO
+
+	dataSize := len(i.Data)
+	for index, sheet := range i.Sheets {
+		if sheet.Type != 0x00 {
+			// 0x00: Worksheet
+			// 0x02: Chart
+			// 0x06: Visual Basic module
+			fmt.Printf("不是 Worksheet(%s): %d %d", sheet.Name, index, sheet.Type)
+			continue
+		}
+
+		worksheet := &XlsBookWorkSheet{
+			Name:             sheet.Name,
+			lastColumnLetter: "A",
+			lastColumnIdnex:  0,
+			totalRows:        0,
+			totalColumns:     0,
+		}
+		pos = int(sheet.Offset)
+	Loop:
+		for pos <= (dataSize - 4) {
+			code, err := GetUInt2d(i.Data, pos)
+			if err != nil {
+				return nil, err
+			}
+
+			switch code {
+			case XLS_TYPE_RK:
+			case XLS_TYPE_LABELSST:
+			case XLS_TYPE_NUMBER:
+			case XLS_TYPE_FORMULA:
+			case XLS_TYPE_BOOLERR:
+			case XLS_TYPE_LABEL:
+				len, err := GetUInt2d(i.Data, pos+2)
+				if err != nil {
+					return nil, err
+				}
+				recordData, err := i.ReadRecordData(i.Data, pos+4, int(len))
+				if err != nil {
+					return nil, err
+				}
+				pos += 4 + int(len)
+				rowIndex, err := GetUInt2d(recordData, 0)
+				if err != nil {
+					return nil, err
+				}
+				columnIndex, err := GetUInt2d(recordData, 2)
+				if err != nil {
+					return nil, err
+				}
+				worksheet.totalRows = uint16(math.Max(float64(worksheet.totalRows), float64(rowIndex+1)))
+				worksheet.lastColumnIdnex = uint16(math.Max(float64(worksheet.lastColumnIdnex), float64(columnIndex)))
+
+				break
+			case XLS_TYPE_BOF:
+				p, err := i.ReadBof(pos)
+				if err != nil {
+					return sheets, err
+				}
+				pos = p
+				break
+			case XLS_TYPE_EOF:
+				p, err := i.ReadDefault(pos)
+				if err != nil {
+					return sheets, err
+				}
+				pos = p
+				break Loop
+			default:
+				p, err := i.ReadDefault(pos)
+				if err != nil {
+					return sheets, err
+				}
+				pos = p
+				break
+			}
+		}
+		worksheet.lastColumnLetter = ColumnIndexToString(worksheet.lastColumnIdnex + 1)
+		worksheet.totalColumns = worksheet.lastColumnIdnex + 1
+		sheets = append(sheets, worksheet)
+	}
+	return sheets, nil
 }
 
 func (i *XlsBook) ReadBof(pos int) (int, error) {
@@ -131,12 +270,16 @@ func (i *XlsBook) ReadBof(pos int) (int, error) {
 		return pos, err
 	}
 
-	recordData := i.Data[pos+4 : length]
+	fmt.Printf("ReadBof: %d %d\n", pos, length)
+
+	recordData := i.Data[pos+4 : pos+4+int(length)]
 	pos += 4 + int(length)
 	substreamType, err := GetUInt2d(recordData, 2)
 	if err != nil {
 		return pos, err
 	}
+
+	fmt.Printf("ReadBof substreamType: %d\n", substreamType)
 
 	switch substreamType {
 	case XLS_WORKBOOKGLOBALS:
@@ -148,7 +291,7 @@ func (i *XlsBook) ReadBof(pos int) (int, error) {
 			return pos, fmt.Errorf("这个文件的格式太老了")
 		}
 		// TODO 这个结构要读到这一步才能获取到版本信息，加载流程确认下
-		fmt.Printf("xls 文件版本: %d", version)
+		fmt.Printf("xls 文件版本: %d\n", version)
 		i.version = version
 		break
 	case XLS_WORKSHEET:
@@ -161,7 +304,7 @@ func (i *XlsBook) ReadBof(pos int) (int, error) {
 			if err != nil {
 				return pos, err
 			}
-			p, err := i.ReadDefault()
+			p, err := i.ReadDefault(pos)
 			if err != nil {
 				return p, err
 			}
@@ -172,20 +315,28 @@ func (i *XlsBook) ReadBof(pos int) (int, error) {
 		}
 		break
 	}
+
+	fmt.Printf("ReadBof end. %d\n", pos)
 	return pos, nil
 }
 
-func (i *XlsBook) ReadSheet(pos int)  (int, error) {
+func (i *XlsBook) ReadSheet(pos int) (int, error) {
 	length, err := GetUInt2d(i.Data, pos+2)
 	if err != nil {
 		return pos, err
 	}
-	recordData := i.Data[pos+4 : length]
-
-	recOffset, err := GetInt4d(i.Data, pos + 4)
+	recordData, err := i.ReadRecordData(i.Data, pos+4, int(length))
 	if err != nil {
 		return pos, err
 	}
+
+	recOffset, err := GetInt4d(i.Data, pos+4)
+	if err != nil {
+		return pos, err
+	}
+	fmt.Printf("sheet recOffset: %d\n", recOffset)
+	pos += 4 + int(length)
+
 	var sheetState string
 	switch recordData[4] {
 	case 0x00:
@@ -201,19 +352,103 @@ func (i *XlsBook) ReadSheet(pos int)  (int, error) {
 		sheetState = WORKSHEET_SHEETSTATE_VISIBLE
 		break
 	}
-	fmt.Printf("sheet state: %s", sheetState)
+	fmt.Printf("sheet state: %s\n", sheetState)
 
 	sheetType := recordData[5]
-	fmt.Printf("sheet type: %d", sheetType)
+	fmt.Printf("sheet type: %d\n", sheetType)
 
 	recName := ""
 	switch i.version {
 	case XLS_BIFF8:
-		recName = ""
+		n, _, err := ReadUnicodeStringShort(recordData[6:])
+		if err != nil {
+			return pos, err
+		}
+		recName = string(n)
+		break
+	case XLS_BIFF7:
+		s, err := ReadByteStringStort(i.codePageCode, recordData[6:])
+		if err != nil {
+			return pos, err
+		}
+		recName = s
+		break
 	}
 
+	if i.Sheets == nil {
+		i.Sheets = make([]XlsBookSheet, 0)
+	}
+	i.Sheets = append(i.Sheets, XlsBookSheet{
+		Name:   recName,
+		Offset: recOffset,
+		State:  sheetState,
+		Type:   sheetType,
+	})
+	return pos, nil
 }
 
-func (i *XlsBook) ReadDefault() (int, error) {
+func (i *XlsBook) ReadDefault(pos int) (int, error) {
+	len, err := GetUInt2d(i.Data, pos+2)
+	if err != nil {
+		return pos, err
+	}
+	return pos + 4 + int(len), nil
+}
+
+// func (i *XlsBook) ReadFilepass(pos int) {
+// 	len := GetUInt2d(i.Data, pos+2)
+// }
+
+func (i *XlsBook) ReadCodePage(pos int) (int, error) {
+	length, err := GetUInt2d(i.Data, pos+2)
+	if err != nil {
+		return pos, err
+	}
+	recordData, err := i.ReadRecordData(i.Data, pos+4, int(length))
+	if err != nil {
+		return pos, err
+	}
+	pos += 4 + int(length)
+	codePage, err := GetUInt2d(recordData, 0)
+	if err != nil {
+		return pos, err
+	}
+
+	i.codePageCode = codePage
+	i.codePage = NumberToName(codePage)
+
+	return pos, nil
+}
+
+func (i *XlsBook) ReadRecordData(data []byte, pos int, len int) ([]byte, error) {
+	data = data[pos : pos+len]
+
+	// 没有加密，返回
+	if i.encryption == MS_BIFF_CRYPTO_NONE || pos < int(i.encryptionStartPos) {
+		fmt.Println("没加密")
+		return data, nil
+	}
+
+	// XOR 不支持
+	if i.encryption == MS_BIFF_CRYPTO_XOR {
+		return nil, fmt.Errorf("不支持 XOR 加密")
+	}
+
+	// if i.encryption == MS_BIFF_CRYPTO_RC4 {
+	// 	fmt.Println("RC4 加密")
+	// 	oldBlock := int(math.Floor(float64(i.rc4Pos) / REKEY_BLOCK))
+	// 	block := int(math.Floor(float64(pos) / REKEY_BLOCK))
+	// 	endBlock := int(math.Floor(float64(pos + len) / REKEY_BLOCK))
+
+	// TODO 这部分 PHPSpreadSheet 不完善
+	// 	if block != oldBlock || pos < i.rc4Pos || i.rc4Cipher == nil {
+	// 		i.rc4Cipher =
+	// 	}
+	// }
+
+	return nil, fmt.Errorf("不明确的加密类型 %d", i.encryption)
+}
+
+func (i *XlsBook) MakeKey(block int, vc string) {
 
 }

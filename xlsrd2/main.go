@@ -22,4 +22,13 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("book struct size: %d\n", unsafe.Sizeof(*xlsBook))
+
+	fmt.Println("======================================")
+	wss, err := xlsBook.ListWookSheetNames()
+	if err != nil {
+		log.Fatal(err)
+	}
+	for i, ws := range wss {
+		fmt.Printf("%d %s", i, ws.Name)
+	}
 }
