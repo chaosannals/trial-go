@@ -146,14 +146,12 @@ Loop1:
 				return sheets, err
 			}
 			pos = p
-			break
 		case XLS_TYPE_SHEET:
 			p, err := i.ReadSheet(pos)
 			if err != nil {
 				return sheets, err
 			}
 			pos = p
-			break
 		case XLS_TYPE_EOF:
 			p, err := i.ReadDefault(pos)
 			if err != nil {
@@ -167,14 +165,12 @@ Loop1:
 				return sheets, err
 			}
 			pos = p
-			break
 		default:
 			p, err := i.ReadDefault(pos)
 			if err != nil {
 				return sheets, err
 			}
 			pos = p
-			break
 		}
 	}
 
@@ -206,13 +202,15 @@ Loop1:
 				return nil, err
 			}
 
+			fmt.Printf("ListWookSheetNames Loop(1) at:%d  code: %d\n", pos, code)
+
 			switch code {
-			case XLS_TYPE_RK:
-			case XLS_TYPE_LABELSST:
-			case XLS_TYPE_NUMBER:
-			case XLS_TYPE_FORMULA:
-			case XLS_TYPE_BOOLERR:
-			case XLS_TYPE_LABEL:
+			case XLS_TYPE_RK,
+				XLS_TYPE_LABELSST,
+				XLS_TYPE_NUMBER,
+				XLS_TYPE_FORMULA,
+				XLS_TYPE_BOOLERR,
+				XLS_TYPE_LABEL:
 				len, err := GetUInt2d(i.Data, pos+2)
 				if err != nil {
 					return nil, err
@@ -222,6 +220,7 @@ Loop1:
 					return nil, err
 				}
 				pos += 4 + int(len)
+				// fmt.Printf("ListWookSheetNames Loop(2) at:%d size: %d\n", pos, len)
 				rowIndex, err := GetUInt2d(recordData, 0)
 				if err != nil {
 					return nil, err
@@ -232,16 +231,14 @@ Loop1:
 				}
 				worksheet.totalRows = uint16(math.Max(float64(worksheet.totalRows), float64(rowIndex+1)))
 				worksheet.lastColumnIdnex = uint16(math.Max(float64(worksheet.lastColumnIdnex), float64(columnIndex)))
-
-				break
 			case XLS_TYPE_BOF:
 				p, err := i.ReadBof(pos)
 				if err != nil {
 					return sheets, err
 				}
 				pos = p
-				break
 			case XLS_TYPE_EOF:
+				fmt.Printf("ListWookSheetNames XLS_TYPE_EOF %d\n", pos)
 				p, err := i.ReadDefault(pos)
 				if err != nil {
 					return sheets, err
@@ -254,7 +251,6 @@ Loop1:
 					return sheets, err
 				}
 				pos = p
-				break
 			}
 		}
 		worksheet.lastColumnLetter = ColumnIndexToString(worksheet.lastColumnIdnex + 1)
@@ -293,7 +289,6 @@ func (i *XlsBook) ReadBof(pos int) (int, error) {
 		// TODO 这个结构要读到这一步才能获取到版本信息，加载流程确认下
 		fmt.Printf("xls 文件版本: %d\n", version)
 		i.version = version
-		break
 	case XLS_WORKSHEET:
 		// 此项的版本信息不可靠
 		// (OpenOffice doc, 5.8)指出使用全局流里面的版本信息
@@ -313,7 +308,6 @@ func (i *XlsBook) ReadBof(pos int) (int, error) {
 				break
 			}
 		}
-		break
 	}
 
 	fmt.Printf("ReadBof end. %d\n", pos)
@@ -341,16 +335,12 @@ func (i *XlsBook) ReadSheet(pos int) (int, error) {
 	switch recordData[4] {
 	case 0x00:
 		sheetState = WORKSHEET_SHEETSTATE_VISIBLE
-		break
 	case 0x01:
 		sheetState = WORKSHEET_SHEETSTATE_HIDDEN
-		break
 	case 0x02:
 		sheetState = WORKSHEET_SHEETSTATE_VERYHIDDEN
-		break
 	default:
 		sheetState = WORKSHEET_SHEETSTATE_VISIBLE
-		break
 	}
 	fmt.Printf("sheet state: %s\n", sheetState)
 
@@ -365,14 +355,12 @@ func (i *XlsBook) ReadSheet(pos int) (int, error) {
 			return pos, err
 		}
 		recName = string(n)
-		break
 	case XLS_BIFF7:
 		s, err := ReadByteStringStort(i.codePageCode, recordData[6:])
 		if err != nil {
 			return pos, err
 		}
 		recName = s
-		break
 	}
 
 	if i.Sheets == nil {
