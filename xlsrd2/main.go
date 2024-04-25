@@ -24,11 +24,18 @@ func main() {
 	fmt.Printf("book struct size: %d\n", unsafe.Sizeof(*xlsBook))
 
 	fmt.Println("======================================")
-	wss, err := xlsBook.ListWookSheetNames()
+	wss, err := xlsBook.ListWookSheetInfos()
 	if err != nil {
 		log.Fatal(err)
 	}
 	for i, ws := range wss {
-		fmt.Printf("%d %s", i, ws.Name)
+		fmt.Printf(
+			"[%d]\n name:'%s'\n LastColumnLetter:'%s'\n totalColumns: %d\n totalRows: %d\n",
+			i,
+			ws.Name,
+			ws.LastColumnLetter,
+			ws.TotalColumns,
+			ws.TotalRows,
+		)
 	}
 }

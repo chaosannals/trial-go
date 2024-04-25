@@ -30,10 +30,10 @@ type XlsBookSheet struct {
 
 type XlsBookWorkSheet struct {
 	Name             string
-	lastColumnLetter string
-	lastColumnIdnex  uint16
-	totalRows        uint16
-	totalColumns     uint16
+	LastColumnLetter string
+	LastColumnIdnex  uint16
+	TotalRows        uint16
+	TotalColumns     uint16
 }
 
 type XlsBook struct {
@@ -124,7 +124,7 @@ func (i *XlsBook) ReadStream(id int32) ([]byte, error) {
 	return streamData, nil
 }
 
-func (i *XlsBook) ListWookSheetNames() ([]*XlsBookWorkSheet, error) {
+func (i *XlsBook) ListWookSheetInfos() ([]*XlsBookWorkSheet, error) {
 	dLen := len(i.Data)
 	pos := 0
 	sheets := make([]*XlsBookWorkSheet, 0)
@@ -175,7 +175,6 @@ Loop1:
 	}
 
 	fmt.Printf("fetch worksheet (%d) info.\n", len(i.Sheets))
-	// TODO
 
 	dataSize := len(i.Data)
 	for index, sheet := range i.Sheets {
@@ -189,10 +188,10 @@ Loop1:
 
 		worksheet := &XlsBookWorkSheet{
 			Name:             sheet.Name,
-			lastColumnLetter: "A",
-			lastColumnIdnex:  0,
-			totalRows:        0,
-			totalColumns:     0,
+			LastColumnLetter: "A",
+			LastColumnIdnex:  0,
+			TotalRows:        0,
+			TotalColumns:     0,
 		}
 		pos = int(sheet.Offset)
 	Loop:
@@ -229,8 +228,8 @@ Loop1:
 				if err != nil {
 					return nil, err
 				}
-				worksheet.totalRows = uint16(math.Max(float64(worksheet.totalRows), float64(rowIndex+1)))
-				worksheet.lastColumnIdnex = uint16(math.Max(float64(worksheet.lastColumnIdnex), float64(columnIndex)))
+				worksheet.TotalRows = uint16(math.Max(float64(worksheet.TotalRows), float64(rowIndex+1)))
+				worksheet.LastColumnIdnex = uint16(math.Max(float64(worksheet.LastColumnIdnex), float64(columnIndex)))
 			case XLS_TYPE_BOF:
 				p, err := i.ReadBof(pos)
 				if err != nil {
@@ -253,8 +252,8 @@ Loop1:
 				pos = p
 			}
 		}
-		worksheet.lastColumnLetter = ColumnIndexToString(worksheet.lastColumnIdnex + 1)
-		worksheet.totalColumns = worksheet.lastColumnIdnex + 1
+		worksheet.LastColumnLetter = ColumnIndexToString(worksheet.LastColumnIdnex + 1)
+		worksheet.TotalColumns = worksheet.LastColumnIdnex + 1
 		sheets = append(sheets, worksheet)
 	}
 	return sheets, nil
