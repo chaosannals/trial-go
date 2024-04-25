@@ -259,6 +259,10 @@ Loop1:
 	return sheets, nil
 }
 
+func (i *XlsBook) LoadSpreadsheetFromFile(filename string) {
+
+}
+
 func (i *XlsBook) ReadBof(pos int) (int, error) {
 	length, err := GetUInt2d(i.Data, pos+2)
 	if err != nil {
