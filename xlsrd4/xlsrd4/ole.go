@@ -11,6 +11,9 @@ type xlsOleFile struct {
 	xlsBytes []byte
 }
 
+type xlsOlePropertySets struct {
+}
+
 var xlsHead []byte
 
 func init() {
@@ -29,26 +32,28 @@ func readOleFile(xlsPath string) (*xlsOleFile, error) {
 		return nil, fmt.Errorf("无效的 XLS 头")
 	}
 
-	// 头部定位
-	rootStartBlock, err := readInt4(xlsBytes, ROOT_START_BLOCK_POS)
-	if err != nil {
-		return nil, err
-	}
-	fmt.Printf("根开始块ID：%d\n", rootStartBlock)
-
-	// 大区块链
+	// 读大区块链
 	bigBlockChain, err := readOleBigBlockChain(xlsBytes)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Printf("大区块链大小：%d\n", len(bigBlockChain))
 
-	// 小区块链
+	// 读小区块链
 	smallBlockChain, err := readOleSmallBlockChain(xlsBytes, bigBlockChain)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Printf("小区块链大小：%d\n", len(smallBlockChain))
+
+	// 读根区块
+	rootBlock, err := readOleRootBlock(xlsBytes, bigBlockChain)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("根区块大小：%d\n", len(rootBlock))
+
+	// 读属性集
 
 	return &xlsOleFile{
 		xlsBytes: xlsBytes,
@@ -155,8 +160,8 @@ func readOleSmallBlockChain(data []byte, bigBlockChain []byte) ([]byte, error) {
 	smallBlockChain := make([]byte, 0)
 	for blockPos != -2 {
 		pos := (blockPos + 1) * BIG_BLOCK_SIZE
-		sbdb := data[pos : pos+BIG_BLOCK_SIZE]
-		smallBlockChain = append(smallBlockChain, sbdb...)
+		d := data[pos : pos+BIG_BLOCK_SIZE]
+		smallBlockChain = append(smallBlockChain, d...)
 		pos += BIG_BLOCK_SIZE
 
 		r, err := readInt4(bigBlockChain, blockPos*4)
@@ -168,8 +173,37 @@ func readOleSmallBlockChain(data []byte, bigBlockChain []byte) ([]byte, error) {
 	return smallBlockChain, nil
 }
 
-func readOleBlock() {
+func readOleRootBlock(data []byte, bigBlockChain []byte) ([]byte, error) {
+	// 头部定位
+	startPos, err := readInt4(data, ROOT_START_BLOCK_POS)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("根区块ID：%d\n", startPos)
 
+	return readOleBlock(data, bigBlockChain, startPos)
+}
+
+func readOlePropertySets(rootBlock []byte) ([]xlsOlePropertySets, error) {
+	result := make([]xlsOlePropertySets, 0)
+	return result, nil
+}
+
+func readOleBlock(data []byte, bigBlockChain []byte, blockPos int32) ([]byte, error) {
+	result := make([]byte, 0)
+	for blockPos != -2 {
+		pos := (blockPos + 1) * BIG_BLOCK_SIZE
+		d := data[pos : pos+BIG_BLOCK_SIZE]
+		result = append(result, d...)
+
+		b, err := readInt4(bigBlockChain, blockPos*4)
+		if err != nil {
+			return nil, err
+		}
+		blockPos = b
+	}
+
+	return result, nil
 }
 
 func readOleStream() {
