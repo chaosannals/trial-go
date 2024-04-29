@@ -292,8 +292,67 @@ func readOleBlock(data []byte, bigBlockChain []byte, blockPos int32) ([]byte, er
 	return result, nil
 }
 
-func readOleStream() {
+func (oleFile *xlsOleFile) readStream(id int) ([]byte, error) {
+	streamData := make([]byte, 0)
+	if id < 0 {
+		return streamData, fmt.Errorf("不是有效的流 ID")
+	}
 
+	size := oleFile.propertySet.All[id].Size
+	startPos := oleFile.propertySet.All[id].StartPos
+
+	// 如果没有超过小块阈值，就按小块处理
+	if size < SMALL_BLOCK_THRESHOLD {
+		fmt.Printf("流是小块: %d\n", id)
+		rootData, err := readOleBlock(
+			oleFile.xlsBytes,
+			oleFile.bigBlockChain,
+			oleFile.propertySet.All[oleFile.propertySet.RootEntryId].StartPos,
+		)
+		if err != nil {
+			return streamData, err
+		}
+		block := startPos
+		for block != -2 {
+			// 小块是从 0 块开始的。
+			pos := block * SMALL_BLOCK_SIZE
+			// 小块是从 rootEntry 块获取数据
+			streamData = append(streamData, rootData[pos:pos+SMALL_BLOCK_SIZE]...)
+			b, err := readInt4(oleFile.smallBlockChain, block*4)
+			if err != nil {
+				return streamData, err
+			}
+			block = b
+		}
+
+		return streamData, nil
+	}
+
+	// 不是小块就是大块, 向上取整块数
+	fmt.Printf("流大块: %d\n", id)
+	numBlocks := size / BIG_BLOCK_SIZE
+	if (size % BIG_BLOCK_SIZE) != 0 {
+		numBlocks += 1
+	}
+
+	// 空块
+	if numBlocks == 0 {
+		return streamData, nil
+	}
+
+	block := startPos
+	for block != -2 {
+		// 大块是从 1 块开始的
+		pos := (block + 1) * BIG_BLOCK_SIZE
+		// 大块是从 oleFile.xlsBytes 整体上获取数据
+		streamData = append(streamData, oleFile.xlsBytes[pos:pos+BIG_BLOCK_SIZE]...)
+		b, err := readInt4(oleFile.bigBlockChain, block*4)
+		if err != nil {
+			return streamData, err
+		}
+		block = b
+	}
+	return streamData, nil
 }
 
 // 这些标签是固定字符集(不确定是否是 Windows 1252，参考 PHPSpreadSheet 做了类似处理)
