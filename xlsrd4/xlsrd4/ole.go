@@ -5,13 +5,29 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 )
 
-type xlsOleFile struct {
-	xlsBytes []byte
+type xlsOleProperty struct {
+	Name     string
+	TypeId   byte
+	Size     int32
+	StartPos int32
 }
 
 type xlsOlePropertySets struct {
+	WorkBookId            int
+	RootEntryId           int
+	SummaryInfoId         int
+	DocumentSummaryInfoId int
+	All                   []xlsOleProperty
+}
+
+type xlsOleFile struct {
+	xlsBytes        []byte
+	bigBlockChain   []byte
+	smallBlockChain []byte
+	propertySet     *xlsOlePropertySets
 }
 
 var xlsHead []byte
@@ -54,9 +70,17 @@ func readOleFile(xlsPath string) (*xlsOleFile, error) {
 	fmt.Printf("根区块大小：%d\n", len(rootBlock))
 
 	// 读属性集
+	propertySets, err := readOlePropertySets(rootBlock)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("属性个数：%d\n", len(propertySets.All))
 
 	return &xlsOleFile{
-		xlsBytes: xlsBytes,
+		xlsBytes:        xlsBytes,
+		bigBlockChain:   bigBlockChain,
+		smallBlockChain: smallBlockChain,
+		propertySet:     propertySets,
 	}, nil
 }
 
@@ -184,8 +208,70 @@ func readOleRootBlock(data []byte, bigBlockChain []byte) ([]byte, error) {
 	return readOleBlock(data, bigBlockChain, startPos)
 }
 
-func readOlePropertySets(rootBlock []byte) ([]xlsOlePropertySets, error) {
-	result := make([]xlsOlePropertySets, 0)
+func readOlePropertySets(rootBlock []byte) (*xlsOlePropertySets, error) {
+	result := &xlsOlePropertySets{
+		WorkBookId:            -1,
+		RootEntryId:           -1,
+		SummaryInfoId:         -1,
+		DocumentSummaryInfoId: -1,
+		All:                   make([]xlsOleProperty, 0),
+	}
+	blockSize := len(rootBlock)
+	for offset := 0; offset < blockSize; offset += PROPERTY_STORAGE_BLOCK_SIZE {
+		d := rootBlock[offset : offset+PROPERTY_STORAGE_BLOCK_SIZE]
+
+		nameSize := int32(d[SIZE_OF_NAME_POS]) | (int32(d[SIZE_OF_NAME_POS+1]) << 8)
+		fmt.Printf("属性名大小: %d\n", nameSize)
+
+		typeId := d[TYPE_POS]
+		fmt.Printf("属性类型: %d\n", typeId)
+
+		startPos, err := readInt4(d, START_BLOCK_POS)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("属性起始位置: %d\n", startPos)
+
+		size, err := readInt4(d, SIZE_POS)
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("属性大小: %d\n", size)
+
+		name := string(d[0:nameSize])
+		fmt.Printf("属性名(%d): %s %v\n", len(name), name, d[0:nameSize])
+		tag := convNameTag(d[0:nameSize])
+		fmt.Printf("属性名[转换](%d): %s %v\n", len(tag), tag, d[0:nameSize])
+		upName := strings.ToUpper(tag)
+		fmt.Printf("属性名大写化(%d): %s\n", len(upName), upName)
+
+		result.All = append(result.All, xlsOleProperty{
+			Name:     name,
+			TypeId:   typeId,
+			Size:     size,
+			StartPos: startPos,
+		})
+
+		// (BIFF5 uses Book, BIFF8 uses Workbook)
+		if strings.Compare(upName, "WORKBOOK") == 0 || strings.Compare(upName, "BOOK") == 0 {
+			workbook := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("workbook: %d\n", workbook)
+			result.WorkBookId = workbook
+		} else if upName == "ROOT ENTRY" || upName == "R" {
+			rootEntry := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("rootEntry: %d\n", rootEntry)
+			result.RootEntryId = rootEntry
+		} else if tag == "SummaryInformation" {
+			summaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("summaryInfo: %d\n", summaryInfo)
+			result.SummaryInfoId = summaryInfo
+		} else if tag == "DocumentSummaryInformation" {
+			docSummaryInfo := offset / PROPERTY_STORAGE_BLOCK_SIZE
+			fmt.Printf("docSummaryInfo: %d\n", docSummaryInfo)
+			result.DocumentSummaryInfoId = docSummaryInfo
+		}
+	}
+
 	return result, nil
 }
 
@@ -208,4 +294,18 @@ func readOleBlock(data []byte, bigBlockChain []byte, blockPos int32) ([]byte, er
 
 func readOleStream() {
 
+}
+
+// 这些标签是固定字符集(不确定是否是 Windows 1252，参考 PHPSpreadSheet 做了类似处理)
+func convNameTag(data []byte) string {
+	result := make([]byte, len(data))
+	j := 0
+	for i, v := range data {
+		if (i == 0 && v == 5) || (v == 0) {
+			continue
+		}
+		result[j] = v
+		j += 1
+	}
+	return string(result[0:j])
 }
