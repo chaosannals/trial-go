@@ -26,6 +26,10 @@ type XlsSpreadsheetProperties struct {
 	//    Thumbnail
 	//    Name of creating application
 	//    Security
+
+	Category string
+	Manager  string
+	Company  string
 }
 
 type XlsSpreadsheet struct {
@@ -36,6 +40,7 @@ type XlsSpreadsheetProperty struct {
 	UInt16Value   uint16
 	Int32Value    int32
 	StringValue   string
+	BoolValue     bool
 	DateTimeValue time.Time
 }
 
@@ -86,6 +91,8 @@ func (spreadsheet *XlsSpreadsheet) readSummaryInfo(book *XlsBook) error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("概要信息，属性ID: %d\n", id)
+
 		// offset: ($secOffset+12) + (8 * $i); size: 4; offset from beginning of section (48)
 		offset, err := readInt4(book.summaryInfo, secOffset+12+(8*i))
 		if err != nil {
@@ -138,6 +145,99 @@ func (spreadsheet *XlsSpreadsheet) readSummaryInfo(book *XlsBook) error {
 	return nil
 }
 
+func (spreadsheet *XlsSpreadsheet) readDocumentSummaryInfo(book *XlsBook) error {
+	//    offset: 0;    size: 2;    must be 0xFE 0xFF (UTF-16 LE byte order mark)
+	//    offset: 2;    size: 2;
+	//    offset: 4;    size: 2;    OS version
+	//    offset: 6;    size: 2;    OS indicator
+	//    offset: 8;    size: 16
+	//    offset: 24;    size: 4;    section count
+	secCount, err := readInt4(book.documentSummaryInfo, 24)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("文档概要信息，片段数: %d\n", secCount)
+
+	// offset: 28;    size: 16;    first section's class id: 02 d5 cd d5 9c 2e 1b 10 93 97 08 00 2b 2c f9 ae
+	// offset: 44;    size: 4;    first section offset
+	secOffset, err := readInt4(book.documentSummaryInfo, 44)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("文档概要信息，片起始位置: %d\n", secOffset)
+
+	// section header
+	// offset: $secOffset; size: 4; section length
+	secLength, err := readInt4(book.documentSummaryInfo, secOffset)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("文档概要信息，片长度: %d\n", secLength)
+
+	// offset: $secOffset+4; size: 4; property count
+	propertiesCount, err := readInt4(book.documentSummaryInfo, secOffset+4)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("文档概要信息，属性个数: %d\n", propertiesCount)
+
+	// initialize code page (used to resolve string values)
+	codePage := uint16(1252) // 初始化 CP1252
+
+	// offset: ($secOffset+8); size: var
+	for i := int32(0); i < propertiesCount; i += 1 {
+		// offset: ($secOffset+8) + (8 * $i); size: 4; property ID
+		id, err := readInt4(book.documentSummaryInfo, secOffset+8+(8*i))
+		if err != nil {
+			return err
+		}
+		fmt.Printf("文档概要信息，属性ID: %d\n", id)
+
+		// offset: ($secOffset+12) + (8 * $i); size: 4; offset from beginning of section (48)
+		offset, err := readInt4(book.documentSummaryInfo, secOffset+12+(8*i))
+		if err != nil {
+			return err
+		}
+
+		// 类型
+		t, err := readInt4(book.documentSummaryInfo, secOffset+offset)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("文档概要信息，属性类型: %d\n", t)
+
+		value, err := GetXlsSpreadsheetProperty(book.documentSummaryInfo, secOffset, offset, codePage, t)
+		if err != nil {
+			return err
+		}
+
+		switch id {
+		case 0x01:
+			codePage = value.UInt16Value
+		case 0x02:
+			spreadsheet.Properties.Category = value.StringValue
+		case 0x03: //    Presentation Target
+		case 0x04: //    Bytes
+		case 0x05: //    Lines
+		case 0x06: //    Paragraphs
+		case 0x07: //    Slides
+		case 0x08: //    Notes
+		case 0x09: //    Hidden Slides
+		case 0x0A: //    MM Clips
+		case 0x0B: //    Scale Crop
+		case 0x0C: //    Heading Pairs
+		case 0x0D: //    Titles of Parts
+		case 0x0E: //    Manager
+			spreadsheet.Properties.Manager = value.StringValue
+		case 0x0F:
+			spreadsheet.Properties.Company = value.StringValue
+		case 0x10: //    Links up-to-date
+		}
+	}
+	return nil
+}
+
+// summaryInfo 和 documentSummaryInfo 可能是使用 2种的不同类别集，但是从代码上看基本相同，这里复用了。
 func GetXlsSpreadsheetProperty(summaryInfo []byte, secOffset int32, offset int32, codePage uint16, t int32) (*XlsSpreadsheetProperty, error) {
 	switch t {
 	case 0x02:
@@ -149,6 +249,11 @@ func GetXlsSpreadsheetProperty(summaryInfo []byte, secOffset int32, offset int32
 		v, err := readInt4(summaryInfo, secOffset+4+offset)
 		return &XlsSpreadsheetProperty{
 			Int32Value: v,
+		}, err
+	case 0x0B:
+		v, err := readUInt2(summaryInfo, secOffset+4+offset)
+		return &XlsSpreadsheetProperty{
+			BoolValue: v != 0,
 		}, err
 	case 0x13:
 		// 4 byte unsigned integer
@@ -175,6 +280,10 @@ func GetXlsSpreadsheetProperty(summaryInfo []byte, secOffset int32, offset int32
 		}, err
 	case 0x47: // 剪切板格式
 		return nil, fmt.Errorf("不支持的类型 0x47")
+	case 0x100C: // documentSummaryInfo id 是 12 的数据， 被跳过了。
+		return &XlsSpreadsheetProperty{}, nil
+	case 0x101E: // documentSummaryInfo id 是 13 （标题之类的）的数据， 被跳过了。
+		return &XlsSpreadsheetProperty{}, nil
 	default:
 		return nil, fmt.Errorf("不支持的类型 %d", t)
 	}

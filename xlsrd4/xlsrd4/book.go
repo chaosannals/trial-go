@@ -199,6 +199,10 @@ func LoadSpreadsheetFromFile(xlsPath string) (*XlsSpreadsheet, error) {
 	}
 	spreadsheet := &XlsSpreadsheet{}
 	err = spreadsheet.readSummaryInfo(book)
+	if err != nil {
+		return nil, err
+	}
+	err = spreadsheet.readDocumentSummaryInfo(book)
 	return spreadsheet, err
 }
 
