@@ -25,4 +25,9 @@ func main() {
 	for _, sheet := range sheets {
 		fmt.Printf("Sheet: %s \n", sheet.Name)
 	}
+	spreadsheet, err := xlsrd4.LoadSpreadsheetFromFile(xlsPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("title: %s", spreadsheet.Properties.Title)
 }

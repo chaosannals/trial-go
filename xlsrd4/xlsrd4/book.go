@@ -192,6 +192,16 @@ parseLoop:
 	return sheets, nil
 }
 
+func LoadSpreadsheetFromFile(xlsPath string) (*XlsSpreadsheet, error) {
+	book, err := ReadXlsFile(xlsPath)
+	if err != nil {
+		return nil, err
+	}
+	spreadsheet := &XlsSpreadsheet{}
+	err = spreadsheet.readSummaryInfo(book)
+	return spreadsheet, err
+}
+
 var ColumnIndexStringCache map[uint16]string
 
 const ColumnIndexStringLookup = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"

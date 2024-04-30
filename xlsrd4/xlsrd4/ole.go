@@ -368,3 +368,27 @@ func convNameTag(data []byte) string {
 	}
 	return string(result[0:j])
 }
+
+// 把 64位的 OLE2 时间戳 转换成 32位的 Unix 时间戳
+// TODO 找文档，PHP 的这个函数是错误的。
+func readOle2LocalDate(data []byte) (int64, error) {
+	if len(data) != 8 {
+		return 0, fmt.Errorf("不是有效的 OLE2 时间戳")
+	}
+
+	high := (int64(data[7]) << 24) | (int64(data[6]) << 16) | (int64(data[5]) << 8) | int64(data[4])
+	low := (int64(data[3]) << 24) | (int64(data[2]) << 16) | (int64(data[1]) << 8) | (int64(data[0]))
+
+	v := (high << 32) + low
+	fmt.Printf("readOle2LocalDate: %d, %d, %d, %v\n", high, low, v, data)
+
+	// 转换成秒
+	v /= 10000000
+
+	// 从 1601 到 1970 的时间
+	days := int64(134774)       // 天数
+	seconds := days * 24 * 3600 // 秒数
+
+	// 转成 1970年起始的 Unix 时间戳
+	return v - seconds, nil
+}

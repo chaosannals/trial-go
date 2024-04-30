@@ -39,6 +39,7 @@ func init() {
 
 		1200: unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM), //    UTF-16 (BIFF8)
 		1250: charmap.Windows1250,
+		1252: charmap.Windows1252,
 
 		10000: charmap.Macintosh,          //    Apple Roman
 		10001: japanese.ShiftJIS,          //    Macintosh Japanese
