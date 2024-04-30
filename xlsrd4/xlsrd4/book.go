@@ -128,10 +128,10 @@ parseLoop:
 			TotalRows:        0,
 			TotalColumns:     0,
 		}
-		pos := sheet.Offset
+		parser.pos = sheet.Offset
 	Loop:
-		for pos <= (dataSize - 4) {
-			code, err := readUInt2(book.workbook, pos)
+		for parser.pos <= (dataSize - 4) {
+			code, err := readUInt2(book.workbook, parser.pos)
 			if err != nil {
 				return nil, err
 			}
@@ -145,15 +145,15 @@ parseLoop:
 				XLS_TYPE_FORMULA,
 				XLS_TYPE_BOOLERR,
 				XLS_TYPE_LABEL:
-				len, err := readUInt2(book.workbook, pos+2)
+				len, err := readUInt2(book.workbook, parser.pos+2)
 				if err != nil {
 					return nil, err
 				}
-				recordData, err := parser.parseRecordData(book.workbook, pos+4, int32(len))
+				recordData, err := parser.parseRecordData(book.workbook, parser.pos+4, int32(len))
 				if err != nil {
 					return nil, err
 				}
-				pos += 4 + int32(len)
+				parser.pos += 4 + int32(len)
 				// fmt.Printf("ListWookSheetNames Loop(2) at:%d size: %d\n", pos, len)
 				rowIndex, err := readUInt2(recordData, 0)
 				if err != nil {
@@ -170,21 +170,18 @@ parseLoop:
 				if err != nil {
 					return sheets, err
 				}
-				pos = parser.pos
 			case XLS_TYPE_EOF:
-				fmt.Printf("ListWookSheetNames XLS_TYPE_EOF %d\n", pos)
+				fmt.Printf("ListWookSheetNames XLS_TYPE_EOF %d\n", parser.pos)
 				err := parser.parseSkip(book.workbook)
 				if err != nil {
 					return sheets, err
 				}
-				pos = parser.pos
 				break Loop
 			default:
 				err := parser.parseSkip(book.workbook)
 				if err != nil {
 					return sheets, err
 				}
-				pos = parser.pos
 			}
 		}
 		worksheet.LastColumnLetter = ColumnIndexToString(worksheet.LastColumnIndex + 1)
