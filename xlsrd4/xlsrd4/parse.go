@@ -83,7 +83,7 @@ func (parser *xlsBookParser) parseBof(workbook []byte) error {
 		return err
 	}
 
-	fmt.Printf("ReadBof substreamType: %d\n", substreamType)
+	fmt.Printf("parseBof substreamType: %d\n", substreamType)
 
 	switch substreamType {
 	case XLS_WORKBOOKGLOBALS:
@@ -135,6 +135,37 @@ func (parser *xlsBookParser) parseCodePage(workbook []byte) error {
 	return err
 }
 
+func (parser *xlsBookParser) parseFilepass(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	if length != 54 {
+		return fmt.Errorf("File Pass 长度不是")
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+
+	parser.pos += 4 + int32(length)
+
+	// 验证密码 这个大概率没有被使用。
+	err = verifyPassword([]byte("VelvetSweatshop"), recordData[6:22], recordData[22:38], recordData[38:54], []byte("md5Ctxt"))
+
+	if err != nil {
+		return err
+	}
+
+	parser.encryption = MS_BIFF_CRYPTO_RC4
+	offset, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	parser.encryptionStartPos = parser.pos + int32(offset)
+	return nil
+}
+
 func (parser *xlsBookParser) parseRecordData(workbook []byte, pos int32, length int32) ([]byte, error) {
 	data := workbook[pos : pos+length]
 
@@ -172,5 +203,21 @@ func (parser *xlsBookParser) parseSkip(workbook []byte) error {
 		return err
 	}
 	parser.pos += 4 + int32(len)
+	return nil
+}
+
+func verifyPassword(password []byte, docid []byte, saltData []byte, hashedSaltData []byte, valContext []byte) error {
+	pwarray := make([]byte, 64)
+	iMax := len(password)
+	for i := 0; i < iMax; i += 1 {
+		o := password[i]
+		pwarray[2*i] = o
+		pwarray[2*i+1] = 0
+	}
+
+	pwarray[2*(iMax-1)] = 0x80
+	pwarray[56] = ((byte(iMax) - 1) << 4) & 0xFF
+
+	// TODO
 	return nil
 }

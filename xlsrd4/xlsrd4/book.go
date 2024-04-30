@@ -203,6 +203,51 @@ func LoadSpreadsheetFromFile(xlsPath string) (*XlsSpreadsheet, error) {
 		return nil, err
 	}
 	err = spreadsheet.readDocumentSummaryInfo(book)
+
+	parser := &xlsBookParser{
+		pos:      0,
+		codePage: 1252,
+	}
+	dataSize := int32(len(book.workbook))
+
+parserLoop:
+	for parser.pos < dataSize {
+		code, err := readUInt2(book.workbook, parser.pos)
+		if err != nil {
+			return nil, err
+		}
+		switch code {
+		case XLS_TYPE_BOF:
+			err = parser.parseBof(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+		case XLS_TYPE_FILEPASS:
+			err = parser.parseFilepass(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+		case XLS_TYPE_CODEPAGE:
+			err = parser.parseCodePage(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+			// TODO
+
+		case XLS_TYPE_EOF:
+			err = parser.parseSkip(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+			break parserLoop
+		default:
+			err = parser.parseSkip(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	return spreadsheet, err
 }
 
