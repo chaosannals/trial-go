@@ -47,3 +47,32 @@ import 使用 block 管理，比其他引擎优秀。
 
 {{ yield body() }}
 ```
+
+## gorazor
+
+这个是把 C# 的 Razor 模板语言移植到 go 了。
+
+搞得和 C# partial 类一个搞法，限制太死。每个模板文件得配一个 go 文件。
+
+采用生成的方式使用，通过 gohtml 文件生成一个 go 文件。
+
+有个非常不好的点，layout 必须包名叫 layout ，约定了这个固定名称。
+
+这种会导致把逻辑写在模板文件里面。和 razor 一个德性。而且golang 没有 partial class ，所以代码无法分离。
+
+
+```bash
+# 这个生成器有 bug ，官方示例生成模板有问题。最后直接复制的官方生成物。
+go install github.com/sipin/gorazor@latest
+go install github.com/sipin/gorazor@1.2.2
+go install github.com/sipin/gorazor@1.2.1
+go install github.com/sipin/gorazor@1.0
+```
+
+```bash
+#Process folder: 
+gorazor template_folder output_folder
+
+#Process file: 
+gorazor template_file output_file
+```
