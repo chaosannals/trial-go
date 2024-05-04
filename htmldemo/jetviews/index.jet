@@ -1,0 +1,15 @@
+{{import "partials/ad.jet" }}
+
+<div>
+index
+<p>base64: {{ base64("123456") }}</p>
+
+{{ ns := slice(1,2,3,4) }}
+{{ range ns }}
+<div>{{.}}</div>
+{{ yield ad2() }}
+{{end}}
+</div>
+
+{{ yield ad() }}
+

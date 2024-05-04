@@ -1,0 +1,9 @@
+{{ block ad() }}
+<div>广告</div>
+{{end}}
+
+<div>不被使用</div>
+
+{{ block ad2() }}
+<div>广告222</div>
+{{end}}

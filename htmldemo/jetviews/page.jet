@@ -1,0 +1,7 @@
+{{ extends "layouts/simple.jet" }}
+{{import "partials/ad.jet" }}
+{{block body()}}
+
+{{ yield ad() }}
+
+{{end}}
