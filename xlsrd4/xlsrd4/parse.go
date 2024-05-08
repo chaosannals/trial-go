@@ -8,6 +8,12 @@ type xlsBookParser struct {
 	codePage           uint16
 	encryption         int32
 	encryptionStartPos int32
+
+	excelCalendar int32
+
+	fonts []xlsFontInfo
+
+	isReadDataOnly bool // [功能]只读数据不读样式
 }
 
 func (parser *xlsBookParser) parseSheet(workbook []byte) (*xlsBookSheet, error) {
@@ -133,6 +139,126 @@ func (parser *xlsBookParser) parseCodePage(workbook []byte) error {
 	parser.pos += 4 + int32(length)
 	parser.codePage, err = readUInt2(recordData, 0)
 	return err
+}
+
+func (parser *xlsBookParser) parseDateMode(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	parser.excelCalendar = CALENDAR_WINDOWS_1900
+	if recordData[0] == 1 {
+		parser.excelCalendar = CALENDAR_MAC_1904
+	}
+	fmt.Printf("DATE MODE(%d) %v: %d\n", length, recordData, parser.excelCalendar)
+	return nil
+}
+
+func (parser *xlsBookParser) parseFont(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	if !parser.isReadDataOnly {
+		// offset: 0; size: 2; height of the font (in twips = 1/20 of a point)
+		size, err := readUInt2(recordData, 0)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("字体大小: %d\n", size/20)
+
+		// offset: 2; size: 2; option flags
+		// bit: 0; mask 0x0001; bold (redundant in BIFF5-BIFF8)
+		// bit: 1; mask 0x0002; italic
+		// bit: 2; mask 0x0004; underlined (redundant in BIFF5-BIFF8)
+		// bit: 3; mask 0x0008; strikethrough
+		flags, err := readUInt2(recordData, 2)
+		if err != nil {
+			return err
+		}
+		isBold := flags & 0x0001
+		isItalic := flags & 0x0002 >> 1
+		isUnderlined := flags & 0x0004 >> 2
+		isStrikethrough := flags & 0x0008 >> 3
+
+		fmt.Printf("字体 加粗: %d 斜体：%d 底线：%d 删除线: %d\n", isBold, isItalic, isUnderlined, isStrikethrough)
+
+		// offset: 4; size: 2; colour index
+		colorIndex, err := readUInt2(recordData, 4)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("字体 颜色索引 %d\n", colorIndex)
+
+		// offset: 6; size: 2; font weight
+		// 该值 700 时认定字体 加粗
+		fontWeight, err := readUInt2(recordData, 6)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("字体 粗细 %d\n", fontWeight)
+
+		// offset: 8; size: 2; escapement type
+		escapementType, err := readUInt2(recordData, 8)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("字体 escapementType %d\n", escapementType)
+
+		// offset: 10; size: 1; underline type
+		underlineType, err := readUInt2(recordData, 10)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("字体 underlineType %d\n", underlineType)
+
+		// offset: 11; size: 1; font family
+		// offset: 12; size: 1; character set
+		// offset: 13; size: 1; not used
+		// offset: 14; size: var; font name
+		var name string
+		if parser.version == XLS_BIFF8 {
+			v, _, err := readUnicodeStringShort(recordData[14:])
+			if err != nil {
+				return err
+			}
+			name = string(v)
+			fmt.Printf("字体 BIFF8 名：%s\n", name)
+		} else {
+			v, err := readByteStringStort(parser.codePage, recordData[14:])
+			if err != nil {
+				return err
+			}
+			name = v
+			fmt.Printf("字体 名：%s\n", v)
+		}
+
+		parser.fonts = append(parser.fonts, xlsFontInfo{
+			Size:            size,
+			IsBold:          isBold == 1,
+			IsItalic:        isItalic == 1,
+			IsUnderlined:    isUnderlined == 1,
+			IsStrikethrough: isStrikethrough == 1,
+			ColorIndex:      colorIndex,
+			Weight:          fontWeight,
+			EscapementType:  escapementType,
+			UnderlineType:   underlineType,
+			Name:            name,
+		})
+	}
+	return nil
 }
 
 func (parser *xlsBookParser) parseFilepass(workbook []byte) error {

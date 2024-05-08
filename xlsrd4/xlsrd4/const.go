@@ -61,4 +61,7 @@ const (
 	WORKSHEET_SHEETSTATE_VISIBLE    = "visible"
 	WORKSHEET_SHEETSTATE_HIDDEN     = "hidden"
 	WORKSHEET_SHEETSTATE_VERYHIDDEN = "veryHidden"
+
+	CALENDAR_WINDOWS_1900 = 1900 //    Base date of 1st Jan 1900 = 1.0
+	CALENDAR_MAC_1904     = 1904 //    Base date of 2nd Jan 1904 = 1.0
 )
