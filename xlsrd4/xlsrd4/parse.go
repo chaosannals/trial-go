@@ -11,7 +11,8 @@ type xlsBookParser struct {
 
 	excelCalendar int32
 
-	fonts []xlsFontInfo
+	fonts   []xlsFontInfo
+	formats map[uint16]string
 
 	isReadDataOnly bool // [功能]只读数据不读样式
 }
@@ -257,6 +258,50 @@ func (parser *xlsBookParser) parseFont(workbook []byte) error {
 			UnderlineType:   underlineType,
 			Name:            name,
 		})
+	}
+	return nil
+}
+
+func (parser *xlsBookParser) parseFormat(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	if !parser.isReadDataOnly {
+		indexCode, err := readUInt2(recordData, 0)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("FORMAT indexCode：%d\n", indexCode)
+
+		var formatString string
+		if parser.version == XLS_BIFF8 {
+			v, _, err := readUnicodeStringShort(recordData[2:])
+			if err != nil {
+				return err
+			}
+			formatString = string(v)
+			fmt.Printf("FORMAT STRING (BIFF8) ：%s\n", formatString)
+		} else {
+			v, err := readByteStringStort(parser.codePage, recordData[2:])
+			if err != nil {
+				return err
+			}
+			formatString = v
+			fmt.Printf("FORMAT STRING：%s\n", v)
+		}
+
+		if parser.formats == nil {
+			parser.formats = make(map[uint16]string)
+		}
+
+		parser.formats[indexCode] = formatString
 	}
 	return nil
 }
