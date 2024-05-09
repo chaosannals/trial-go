@@ -247,6 +247,11 @@ parserLoop:
 			if err != nil {
 				return nil, err
 			}
+		case XLS_TYPE_XF:
+			err = parser.parseXf(book.workbook)
+			if err != nil {
+				return nil, err
+			}
 			// TODO
 
 		case XLS_TYPE_EOF:

@@ -14,6 +14,11 @@ type xlsBookParser struct {
 	fonts   []xlsFontInfo
 	formats map[uint16]string
 
+	styles   map[uint16]xlsStyleInfo
+	xfStyles map[uint16]xlsStyleInfo
+
+	xfIndex int
+
 	isReadDataOnly bool // [功能]只读数据不读样式
 }
 
@@ -303,6 +308,236 @@ func (parser *xlsBookParser) parseFormat(workbook []byte) error {
 
 		parser.formats[indexCode] = formatString
 	}
+	return nil
+}
+
+func (parser *xlsBookParser) parseXf(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	if !parser.isReadDataOnly {
+		// offset:  0; size: 2; Index to FONT record
+		fontIndex, err := readUInt2(recordData, 0)
+		if err != nil {
+			return err
+		}
+		// this has to do with that index 4 is omitted in all BIFF versions for some strange reason
+		// check the OpenOffice documentation of the FONT record
+		if fontIndex >= 4 {
+			fontIndex -= 1
+		}
+
+		if int(fontIndex) < len(parser.fonts) {
+			fmt.Printf("XF 字体： %s\n", parser.fonts[fontIndex].Name)
+		} else {
+			fmt.Printf("XF 字体不匹配： %d\n", fontIndex)
+		}
+
+		// offset:  2; size: 2; Index to FORMAT record
+		formatIndex, err := readUInt2(recordData, 2)
+		if err != nil {
+			return err
+		}
+		var formatCode string
+		if f, ok := parser.formats[formatIndex]; ok {
+			fmt.Printf("XF 格式化串: %s\n", f)
+			formatCode = f
+		} else {
+			formatCode = buildInFormatCode(formatIndex)
+			fmt.Printf("XF 格式化串(内建): %s\n", formatCode)
+		}
+
+		// offset:  4; size: 2; XF type, cell protection, and parent style XF
+		// bit 2-0; mask 0x0007; XF_TYPE_PROT
+		xfTypeProt, err := readUInt2(recordData, 4)
+		if err != nil {
+			return err
+		}
+		// bit 0; mask 0x01; 1 = cell is locked
+		isLocked := xfTypeProt & 0x01
+		// bit 1; mask 0x02; 1 = Formula is hidden
+		isHidden := (xfTypeProt & 0x02) >> 1
+		// bit 2; mask 0x04; 0 = Cell XF, 1 = Cell Style XF
+		isCellStyleXf := (xfTypeProt & 0x04) >> 2
+
+		fmt.Printf("锁定：%d 隐藏: %d XF：%d\n", isLocked, isHidden, isCellStyleXf)
+
+		// offset:  6; size: 1; Alignment and text break
+		// bit 2-0, mask 0x07; horizontal alignment 横向对齐
+		horAlign := recordData[6] & 0x07
+
+		// bit 3, mask 0x08; wrap text  换行
+		wrapText := (recordData[6] & 0x08) >> 3
+
+		// bit 6-4, mask 0x70; vertical alignment 纵向对齐
+		vertAlign := (recordData[6] & 0x70) >> 3
+
+		fmt.Printf("横向对齐：%d 换行: %d 纵向对齐: %d\n", horAlign, wrapText, vertAlign)
+
+		if parser.version == XLS_BIFF8 {
+			// offset:  7; size: 1; XF_ROTATION: Text rotation angle
+			angle := recordData[7]
+			rotation := int16(0) // TODO 这个计算有问题。
+			if angle <= 90 {
+				rotation = int16(angle)
+			} else if angle <= 180 {
+				rotation = int16(90 - int(angle))
+			} else if angle == TEXTROTATION_STACK_EXCEL {
+				rotation = int16(TEXTROTATION_STACK_PHPSPREADSHEET)
+			}
+			fmt.Printf("旋转角度 %d\n", rotation)
+
+			// offset:  8; size: 1; Indentation, shrink to cell size, and text direction
+			// bit: 3-0; mask: 0x0F; indent level
+			indent := recordData[8] & 0x0F
+
+			// bit: 4; mask: 0x10; 1 = shrink content to fit into cell
+			shrinkToFit := recordData[8] & 0x10 >> 4
+
+			fmt.Printf("XF indent: %d shrinkToFit: %d\n", indent, shrinkToFit)
+
+			// offset:  9; size: 1; Flags used for attribute groups
+
+			// offset: 10; size: 4; Cell border lines and background area
+			// bit: 3-0; mask: 0x0000000F; left style
+			bordersStyle, err := readInt4(recordData, 10)
+			if err != nil {
+				return err
+			}
+			leftStyle := bordersStyle & 0x0000000F
+			// bit: 7-4; mask: 0x000000F0; right style
+			rightStyle := (bordersStyle & 0x000000F0) >> 4
+			// bit: 11-8; mask: 0x00000F00; top style
+			topStyle := (bordersStyle & 0x00000F00) >> 8
+			// bit: 15-12; mask: 0x0000F000; bottom style
+			bottomStyle := (bordersStyle & 0x0000F000) >> 12
+			// bit: 22-16; mask: 0x007F0000; left color
+			leftColor := (bordersStyle & 0x007F0000) >> 16
+			// bit: 29-23; mask: 0x3F800000; right color
+			rightColor := (bordersStyle & 0x3F800000) >> 23
+			// bit: 30; mask: 0x40000000; 1 = diagonal line from top left to right bottom
+			diagonalDown := (bordersStyle & 0x40000000) >> 30
+			// bit: 31; mask: 0x800000; 1 = diagonal line from bottom left to top right
+			diagonalUp := (uint32(bordersStyle) & 0x80000000) >> 31
+
+			fmt.Printf("边框样式： 左: %d 右：%d 上：%d 下：%d 颜色：左：%d 右： %d 斜线: 下: %d 上：%d\n", leftStyle, rightStyle, topStyle, bottomStyle, leftColor, rightColor, diagonalDown, diagonalUp)
+
+			// offset: 14; size: 4;
+			// bit: 6-0; mask: 0x0000007F; top color
+			bordersStyle2, err := readInt4(recordData, 14)
+			if err != nil {
+				return err
+			}
+			topColor := bordersStyle2 & 0x0000007F
+
+			// bit: 13-7; mask: 0x00003F80; bottom color
+			bottomColor := (bordersStyle2 & 0x00003F80) >> 7
+
+			// bit: 20-14; mask: 0x001FC000; diagonal color
+			diagonalColor := (bordersStyle2 & 0x001FC000) >> 14
+
+			// bit: 24-21; mask: 0x01E00000; diagonal style
+			diagonalStyle := (bordersStyle2 & 0x01E00000) >> 21
+
+			// bit: 31-26; mask: 0xFC000000 fill pattern
+			fillPattern := (uint32(bordersStyle2) & 0xFC000000) >> 28
+
+			fmt.Printf("边框样式2： 颜色：上： %d 下 %d ：斜线 颜色 %d 样式: %d 填充模式：%d\n", topColor, bottomColor, diagonalColor, diagonalStyle, fillPattern)
+
+			// offset: 18; size: 2; pattern and background colour
+			// bit: 6-0; mask: 0x007F; color index for pattern color
+			colorIndex, err := readUInt2(recordData, 18)
+			if err != nil {
+				return err
+			}
+			startColorIndex := colorIndex & 0x007F
+			// bit: 13-7; mask: 0x3F80; color index for pattern background
+			endColorIndex := (colorIndex & 0x3F80) >> 7
+			fmt.Printf("前景色: %d 背景色: %d", startColorIndex, endColorIndex)
+		} else {
+			// BIFF5
+
+			// offset: 7; size: 1; Text orientation and flags
+			orientationAndFlags := recordData[7]
+
+			// bit: 1-0; mask: 0x03; XF_ORIENTATION: Text orientation
+			xfOrientation := 0x03 & orientationAndFlags
+			rotation := 0
+			switch xfOrientation {
+			case 0:
+				rotation = 0
+			case 1:
+				rotation = TEXTROTATION_STACK_PHPSPREADSHEET
+			case 2:
+				rotation = 90
+			case 3:
+				rotation = -90
+			}
+			fmt.Printf("BIFF5 角度：%d\n", rotation)
+
+			// offset: 8; size: 4; cell border lines and background area
+			borderAndBackground, err := readInt4(recordData, 8)
+			if err != nil {
+				return err
+			}
+
+			// bit: 6-0; mask: 0x0000007F; color index for pattern color
+			startColorIndex := borderAndBackground & 0x0000007F
+
+			// bit: 13-7; mask: 0x00003F80; color index for pattern background
+			endColorIndex := (borderAndBackground & 0x00003F80) >> 7
+
+			// bit: 21-16; mask: 0x003F0000; fill pattern
+			fillPatter := (borderAndBackground & 0x003F0000) >> 16
+
+			// bit: 24-22; mask: 0x01C00000; bottom line style
+			bottomLineStyle := (borderAndBackground & 0x01C00000) >> 22
+
+			// bit: 31-25; mask: 0xFE000000; bottom line color
+			colorIndex := (uint32(borderAndBackground) & 0xFE000000) >> 25
+
+			fmt.Printf("BIFF5 前景色: %d 背景色： %d 填充色 %d 底部线样式 %d 颜色 %d\n", startColorIndex, endColorIndex, fillPatter, bottomLineStyle, colorIndex)
+
+			// offset: 12; size: 4; cell border lines
+			borderLines, err := readInt4(recordData, 12)
+			if err != nil {
+				return err
+			}
+			// bit: 2-0; mask: 0x00000007; top line style
+			topLineStyle := borderLines & 0x00000007
+			// bit: 5-3; mask: 0x00000038; left line style
+			leftLineStyle := (borderLines & 0x00000038) >> 3
+			// bit: 8-6; mask: 0x000001C0; right line style
+			rightLineStyle := (borderLines & 0x000001C0) >> 6
+			// bit: 15-9; mask: 0x0000FE00; top line color index
+			topLineColor := (borderLines & 0x0000FE00) >> 9
+			// bit: 22-16; mask: 0x007F0000; left line color index
+			leftLineColor := (borderLines & 0x007F0000) >> 16
+			// bit: 29-23; mask: 0x3F800000; right line color index
+			rightLineColor := (borderLines & 0x3F800000) >> 23
+
+			fmt.Printf("线 样式： 上： %d 左 %d 右 %d  颜色 上 %d 左 %d 右 %d\n", topLineStyle, leftLineStyle, rightLineStyle, topLineColor, leftLineColor, rightLineColor)
+		}
+
+		// TODO 保存信息
+		// if isCellStyleXf > 0 {
+		// 	if parser.xfIndex == 0 {
+
+		// 	}
+		// } else {
+
+		// }
+
+		parser.xfIndex += 1
+	}
+
 	return nil
 }
 
