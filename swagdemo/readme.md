@@ -15,3 +15,8 @@ go get -u github.com/swaggo/gin-swagger
 # echo 的设配
 go get -u github.com/swaggo/echo-swagger
 ```
+
+```go
+// 引入代码，里面有个 init 方法会初始化文档。
+_ "yourpkg/docs"
+```
