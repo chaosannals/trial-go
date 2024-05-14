@@ -42,6 +42,8 @@ go mod tidy
 
 ### work 工作区
 
+注：work 会影响子目录下的 mod ，即时 mod 没有被 use 也会，此时会出现奇怪的判定。实测 GORM 的生成工具受到影响，一直识别错项目。
+
 ```bash
 # 初始化一个工作区在当前（空）
 go work init

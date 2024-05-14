@@ -541,6 +541,24 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 	return nil
 }
 
+func (parser *xlsBookParser) parseXfExt(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	if !parser.isReadDataOnly {
+		
+	}
+
+	return nil
+}
+
 func (parser *xlsBookParser) parseFilepass(workbook []byte) error {
 	length, err := readUInt2(workbook, parser.pos+2)
 	if err != nil {

@@ -1,5 +1,19 @@
 # uber dig demo 依赖注入
 
+## swag
+
+```bash
+# 安装工具
+go install github.com/swaggo/swag/cmd/swag@latest
+
+# 不同框架使用不同设配库。
+# gin 的设配
+go get -u github.com/swaggo/gin-swagger
+
+# echo 的设配
+go get -u github.com/swaggo/echo-swagger
+```
+
 ## gorm CodeFist
 
 
