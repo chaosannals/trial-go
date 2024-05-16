@@ -35,6 +35,10 @@ func generateCaptchaHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var driver base64Captcha.Driver
 
+	// 这个库每种类型的验证码都需要配置，他这个示例把所有配置都由前端传递过来了。
+	// 打印这个，可以看到这些配置。
+	fmt.Printf("请求：%v\n", &param.DriverMath.Fonts)
+
 	//create base64 encoding captcha
 	switch param.CaptchaType {
 	case "audio":
@@ -70,6 +74,8 @@ func captchaVerifyHandle(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 	}
 	defer r.Body.Close()
+
+	fmt.Printf("请求：%v\n", &param)
 	//verify the captcha
 	body := map[string]interface{}{"code": 0, "msg": "failed"}
 	if store.Verify(param.Id, param.VerifyValue, true) {
