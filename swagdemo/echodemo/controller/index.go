@@ -43,9 +43,26 @@ func (controller *IndexController) ShowAccount(ctx echo.Context) error {
 func (controller *IndexController) ListAccounts(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]any{})
 }
+
+type IndexAddParam struct {
+	Page     int `json:"page" minimum:"1" validate:"optional" example:"1"`
+	PageSize int `json:"page_size" minimum:"1" maximum:"20" validate:"optional" example:"10"`
+}
+
+// 特殊名  request 被使用时，指定整个参数体结构 @Param
+
+// @Summary     Some Endpoint
+// @Produce     json
+// @Param       request             query    IndexAddParam false "Query Params"
+// @Router       /accounts/add [put]
 func (controller *IndexController) AddAccount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]any{})
 }
+
+// @Summary     Some Endpoint
+// @Produce     json
+// @Param       request             body    IndexAddParam false "Query Params"
+// @Router       /accounts/delete [delete]
 func (controller *IndexController) DeleteAccount(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, map[string]any{})
 }

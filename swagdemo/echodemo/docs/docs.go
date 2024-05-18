@@ -15,6 +15,51 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/accounts/add": {
+            "put": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Some Endpoint",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 1,
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 20,
+                        "minimum": 1,
+                        "type": "integer",
+                        "example": 10,
+                        "name": "page_size",
+                        "in": "query"
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/accounts/delete": {
+            "delete": {
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Some Endpoint",
+                "parameters": [
+                    {
+                        "description": "Query Params",
+                        "name": "request",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/controller.IndexAddParam"
+                        }
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/accounts/list": {
             "get": {
                 "description": "get string by ID",
@@ -117,6 +162,22 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controller.IndexAddParam": {
+            "type": "object",
+            "properties": {
+                "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 1
+                },
+                "page_size": {
+                    "type": "integer",
+                    "maximum": 20,
+                    "minimum": 1,
+                    "example": 10
+                }
+            }
+        },
         "util.HTTPError": {
             "type": "object",
             "properties": {

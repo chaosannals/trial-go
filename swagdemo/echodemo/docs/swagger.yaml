@@ -1,4 +1,16 @@
 definitions:
+  controller.IndexAddParam:
+    properties:
+      page:
+        example: 1
+        minimum: 1
+        type: integer
+      page_size:
+        example: 10
+        maximum: 20
+        minimum: 1
+        type: integer
+    type: object
   util.HTTPError:
     properties:
       code:
@@ -44,6 +56,36 @@ paths:
       summary: Show an account
       tags:
       - accounts
+  /accounts/add:
+    put:
+      parameters:
+      - example: 1
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - example: 10
+        in: query
+        maximum: 20
+        minimum: 1
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: Some Endpoint
+  /accounts/delete:
+    delete:
+      parameters:
+      - description: Query Params
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/controller.IndexAddParam'
+      produces:
+      - application/json
+      responses: {}
+      summary: Some Endpoint
   /accounts/list:
     get:
       consumes:
