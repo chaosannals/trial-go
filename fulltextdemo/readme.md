@@ -22,3 +22,4 @@ bleve query foo.bleve "中文" --highlight --fields -x
 
 这个是一个完整的程序，启动一个 HTTP 服务，向外提供接口。功能少，简单。
 
+只需要在 GitHub 下载对应系统的 二进制执行文件。运行即可。

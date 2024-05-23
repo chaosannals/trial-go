@@ -1,0 +1,1 @@
+gofound_windows_amd64 --addr=:5678 --data=./data

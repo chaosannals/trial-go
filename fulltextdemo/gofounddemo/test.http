@@ -1,0 +1,21 @@
+###
+# @name query
+# 默认的端口是 5678 ，这端口感觉会和其他人冲突
+
+POST http://127.0.0.1:5678/api/query?database=yourCustomName HTTP/1.1
+Content-Type: application/json
+
+{
+  "query": "积木泡泡枪",
+  "page": 1,
+  "limit": 1000,
+  "order": "desc",
+  "highlight": {
+    "preTag": "<span style='color:red'>",
+    "postTag": "</span>"
+  }
+}
+
+###
+# @name status
+GET http://127.0.0.1:5678/api/status
