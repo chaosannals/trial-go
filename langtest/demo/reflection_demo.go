@@ -38,7 +38,7 @@ func (i *SBB) Fbb() {
 //SAA {1}
 //IBB &{{2}}
 
-func main_demo() {
+func ReflectionDemo() {
 	fmt.Println("start")
 
 	var aa interface{}

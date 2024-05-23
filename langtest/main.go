@@ -4,31 +4,25 @@ import (
 	"fmt"
 )
 
+// defer 是 [函数作用域] 级别的，出 [块作用域] 不会调用。
+// 要等整个函数调用结束才会被调用。
 func main() {
 	fmt.Println("start")
+	defer func() { fmt.Println("Lv1") }()
 
-	// vv := []byte{12, 34, 54}
-	// a, isOk := vv[6]
-	// fmt.Println(a)
+	for i := 0; i < 10; i++ {
+		fmt.Println("start: Loop Lv1")
+		d := i
+		defer func() { fmt.Printf("Loop Lv1: %d\n", d) }()
 
-	mm := map[string]string{
-		"aa": "1232",
-		"bb": "234324",
+		for j := 0; j < 10; j++ {
+			fmt.Println("start: Loop Lv2")
+			v := j
+			defer func() { fmt.Printf("Loop Lv2: %d\n", v) }()
+			fmt.Println("end: Loop Lv2")
+		}
+		fmt.Println("end: Loop Lv1")
 	}
 
-	v, isOk := mm["12"]
-	fmt.Println(v)
-	fmt.Println(isOk)
-
-	cc := make(chan string, 1)
-
-	go func() {
-		cc <- "sssss"
-		close(cc)
-	}()
-
-	for rr := range cc {
-		fmt.Println(rr)
-	}
-	// fmt.Println(isOk)
+	fmt.Println("end")
 }
