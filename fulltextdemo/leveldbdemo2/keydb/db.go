@@ -9,7 +9,8 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
-var LDB *leveldb.DB
+var DocDb *leveldb.DB
+var IndexDb *leveldb.DB
 
 func InitDb() func() {
 	pwd, err := os.Getwd()
@@ -17,14 +18,28 @@ func InitDb() func() {
 		log.Fatal(err)
 	}
 	fmt.Printf("cur: %s\n", pwd)
-	dbDir := filepath.Join(pwd, "demo.ldb")
-	fmt.Printf("db dir: %s\n", dbDir)
-	db, err := leveldb.OpenFile(dbDir, nil)
+	docDbDir := filepath.Join(pwd, "doc.ldb")
+	indexDbDir := filepath.Join(pwd, "index.ldb")
+
+	fmt.Printf("docDb dir: %s\n", docDbDir)
+	fmt.Printf("indexDb dir: %s\n", indexDbDir)
+
+	// doc
+	docDb, err := leveldb.OpenFile(docDbDir, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
-	LDB = db
+	DocDb = docDb
+
+	// index
+	indexDb, err := leveldb.OpenFile(indexDbDir, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	IndexDb = indexDb
+
 	return func() {
-		db.Close()
+		indexDb.Close()
+		docDb.Close()
 	}
 }

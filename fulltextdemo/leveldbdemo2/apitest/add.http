@@ -6,5 +6,30 @@ PUT {{host}}/add
 Content-Type: application/json
 
 {
-    "content": "中文分词测试工具字段"
+    "content": "中文分词测试工具字段",
+    "intInfo": 123,
+    "floatInfo": 456.789
 }
+
+###
+# @addBatch
+PUT {{host}}/add_batch
+Content-Type: application/json
+
+[
+    {
+        "content": "中文分词测试工具3字段",
+        "intInfo": 123,
+        "floatInfo": 456.789
+    },
+    {
+        "content": "中文分词测试34工具字段",
+        "intInfo": 123,
+        "floatInfo": 456.789
+    },
+    {
+        "content": "中文分词测试22 工具字段",
+        "intInfo": 123,
+        "floatInfo": 456.789
+    }
+]
