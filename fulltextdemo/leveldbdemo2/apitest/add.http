@@ -1,0 +1,10 @@
+@host = http://127.0.0.1:23456
+
+###
+# @add
+PUT {{host}}/add
+Content-Type: application/json
+
+{
+    "content": "中文分词测试工具字段"
+}
