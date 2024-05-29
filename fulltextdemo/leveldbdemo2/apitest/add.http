@@ -2,7 +2,7 @@
 
 ###
 # @add
-PUT {{host}}/add
+PUT {{host}}/add HTTP/1.1
 Content-Type: application/json
 
 {
@@ -13,7 +13,7 @@ Content-Type: application/json
 
 ###
 # @addBatch
-PUT {{host}}/add_batch
+PUT {{host}}/add_batch HTTP/1.1
 Content-Type: application/json
 
 [

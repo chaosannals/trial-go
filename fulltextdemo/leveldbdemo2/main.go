@@ -16,9 +16,9 @@ func main() {
 
 	r := gin.Default()
 	r.GET("/ping", httpapi.Ping)
+	r.GET("/query", httpapi.Query)
 	r.PUT("/add", httpapi.Add)
 	r.PUT("/add_batch", httpapi.AddBatch)
-	r.GET("/query", httpapi.Query)
 
 	r.Run("127.0.0.1:23456")
 }
