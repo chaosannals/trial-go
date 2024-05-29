@@ -1,10 +1,10 @@
 @host = http://127.0.0.1:23456
 
 ###
-# @name query
-GET {{host}}/query HTTP/1.1
+# @name task
+POST {{host}}/task
 Content-Type: application/json
 
 {
-    "plain": "中文"
+
 }

@@ -12,9 +12,8 @@ import (
 )
 
 type DocContent struct {
-	Content   string  `json:"content" form:"content"`
-	IntInfo   int32   `json:"intInfo" form:"intInfo"`
-	FloatInfo float64 `json:"floatInfo" form:"floatInfo"`
+	Plain   string         `json:"plain" form:"plain"`
+	Content map[string]any `json:"content" form:"content"`
 }
 type DocStore struct {
 	DocContent
@@ -36,7 +35,7 @@ func (doc *DocContent) InsertAndCut() (uuid.UUID, []string, error) {
 
 	// 索引
 	// seqs := gse.ToString(keydb.Seg.Segment([]byte(doc.Content)), true)
-	seqs := Seg.CutSearch(doc.Content, true)
+	seqs := Seg.CutSearch(doc.Plain, true)
 	for _, s := range seqs {
 		k := []byte(s)
 		r := id[:]

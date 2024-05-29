@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/chaosannals/fulltext/leveldbdemo2/keydb"
@@ -16,6 +17,7 @@ func Add(ctx *gin.Context) {
 		})
 		return
 	}
+	fmt.Printf("add: %v\n", doc.Content)
 
 	id, seqs, err := doc.InsertAndCut()
 	if err != nil {
