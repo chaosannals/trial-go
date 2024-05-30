@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -40,29 +41,67 @@ func InitMysql() error {
 	return nil
 }
 
+func initStartId() any {
+	keyType := os.Getenv("DB_TASK_KEY_TYPE")
+	switch keyType {
+	case "uint32":
+		return uint32(0)
+	default:
+		fmt.Printf("mysql task: unknown startId %s\n", keyType)
+		return int(0)
+	}
+}
+
+func pickEndId(endRow map[string]any, key string) any {
+	endKey := endRow[key]
+	fmt.Printf("mysql task end key: %v\n", endKey)
+	switch endKey.(type) {
+	case string:
+		fmt.Printf("endKey: is string\n")
+	case uint32:
+		fmt.Printf("endKey: is uint32\n")
+	default:
+		fmt.Printf("endKey: type %v\n", reflect.TypeOf(endKey))
+	}
+	return endKey
+}
+
 func ImportData() error {
 	table := os.Getenv("DB_TASK_TABLE")
 	key := os.Getenv("DB_TASK_KEY")
 	limit := os.Getenv("DB_TASK_LIMIT")
-	// contentKey := os.Getenv("DB_TASK_CONTENT_KEY")
+	plainKey := os.Getenv("DB_TASK_PLAIN_KEY")
 	sql := fmt.Sprintf("SELECT * FROM %s WHERE %s > ? ORDER BY %s LIMIT %s", table, key, key, limit)
-	result := []map[string]any{}
-	startId := 0
-	fmt.Printf("mysql task: %s", sql)
+	fmt.Printf("mysql task: %s\n", sql)
+
+	startId := initStartId()
 	for {
-		if err := Mysql.Raw(sql, startId).Scan(&result).Error; err != nil {
+		rows := []map[string]any{}
+		if err := Mysql.Raw(sql, startId).Scan(&rows).Error; err != nil {
 			return err
 		}
-		count := len(result)
+		count := len(rows)
 		if count <= 0 {
 			break
 		}
-		endItem := result[count-1]
-		if endId, ok := endItem[key].(int); ok {
-			startId = endId
-		}
-		fmt.Printf("mysql task fetch row count: %d\n", count)
+		endRow := rows[count-1]
+		endId := pickEndId(endRow, key)
+		fmt.Printf("mysql task fetch row count: %d endId: %v\n", count, endId)
+		startId = endId
 
+		for _, row := range rows {
+			if plain, ok := row[plainKey].(string); ok {
+				doc := &DocContent{
+					Plain:   plain,
+					Content: row,
+				}
+				if _, _, err := doc.InsertAndCut(); err != nil {
+					fmt.Printf("mysql task insert task failed: %v\n", row)
+				}
+			} else {
+				fmt.Printf("mysql task invalid plainKey(%s) for %v\n", plainKey, row)
+			}
+		}
 	}
 
 	return nil

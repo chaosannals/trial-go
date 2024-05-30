@@ -6,7 +6,7 @@ PUT {{host}}/add HTTP/1.1
 Content-Type: application/json
 
 {
-    "plain": "中文分词测试工具字段",
+    "plain": "用于中文分词测试工具字段名词",
     "content": {
         "text": "中文分词测试工具字段",
         "intInfo": 123,

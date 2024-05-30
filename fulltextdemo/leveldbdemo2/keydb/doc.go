@@ -36,6 +36,7 @@ func (doc *DocContent) InsertAndCut() (uuid.UUID, []string, error) {
 	// 索引
 	// seqs := gse.ToString(keydb.Seg.Segment([]byte(doc.Content)), true)
 	seqs := Seg.CutSearch(doc.Plain, true)
+	batch := new(leveldb.Batch)
 	for _, s := range seqs {
 		k := []byte(s)
 		r := id[:]
@@ -48,7 +49,10 @@ func (doc *DocContent) InsertAndCut() (uuid.UUID, []string, error) {
 		} else {
 			r = append(r, v...)
 		}
-		IndexDb.Put(k, r, &opt.WriteOptions{})
+		batch.Put(k, r)
+	}
+	if err := IndexDb.Write(batch, &opt.WriteOptions{}); err != nil {
+		return id, nil, err
 	}
 
 	// 文档
