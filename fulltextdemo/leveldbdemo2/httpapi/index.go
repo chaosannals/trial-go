@@ -25,12 +25,13 @@ func Ngram(ctx *gin.Context) {
 			"message": err.Error(),
 		})
 	}
-	pl := uint8(len(param.Plain))
+	plain := []rune(param.Plain)
+	pl := uint8(len(plain))
 	seqs := make([]string, 0)
 	for i := param.Min; i <= param.Max; i++ {
 		end := pl - i
 		for j := uint8(0); j < end; j++ {
-			seg := param.Plain[j : j+i]
+			seg := string(plain[j : j+i])
 			seqs = append(seqs, seg)
 		}
 	}
