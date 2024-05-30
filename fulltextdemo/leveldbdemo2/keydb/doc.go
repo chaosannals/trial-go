@@ -22,17 +22,7 @@ type DocStore struct {
 
 type DocIndex = []uuid.UUID
 
-func (doc *DocContent) InsertAndCut() (uuid.UUID, []string, error) {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return id, nil, err
-	}
-
-	de, err := json.Marshal(doc)
-	if err != nil {
-		return id, nil, err
-	}
-
+func (doc *DocContent) CutIndex(id uuid.UUID) ([]string, error) {
 	// 索引
 	// seqs := gse.ToString(keydb.Seg.Segment([]byte(doc.Content)), true)
 	seqs := Seg.CutSearch(doc.Plain, true)
@@ -45,20 +35,70 @@ func (doc *DocContent) InsertAndCut() (uuid.UUID, []string, error) {
 				fmt.Printf("插入 %v\n", r)
 			} else {
 				fmt.Printf("插入错误 %v\n", err)
+				return seqs, err
 			}
 		} else {
 			r = append(r, v...)
 		}
 		batch.Put(k, r)
 	}
-	if err := IndexDb.Write(batch, &opt.WriteOptions{}); err != nil {
-		return id, nil, err
+	err := IndexDb.Write(batch, &opt.WriteOptions{})
+	return seqs, err
+}
+
+type AddResult struct {
+	ID   uuid.UUID `json:"id" form:"id"`
+	Seqs []string  `json:"seqs" form:"seqs"`
+}
+
+func (doc *DocContent) InsertAndCut() (*AddResult, error) {
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	de, err := json.Marshal(doc)
+	if err != nil {
+		return nil, err
+	}
+
+	// 索引
+	seqs, err := doc.CutIndex(id)
+	if err != nil {
+		return nil, err
 	}
 
 	// 文档
 	err = DocDb.Put(id[:], de, &opt.WriteOptions{})
 
-	return id, seqs, err
+	return &AddResult{ID: id, Seqs: seqs}, err
+}
+
+func AddBatch(docs []DocContent) ([]AddResult, error) {
+	result := make([]AddResult, len(docs))
+	batch := new(leveldb.Batch)
+	for i, doc := range docs {
+		id, err := uuid.NewUUID()
+		if err != nil {
+			return result, err
+		}
+		seqs, err := doc.CutIndex(id)
+		if err != nil {
+			return result, err
+		}
+		de, err := json.Marshal(doc)
+		if err != nil {
+			return result, err
+		}
+		batch.Put(id[:], de)
+		result[i] = AddResult{
+			ID:   id,
+			Seqs: seqs,
+		}
+	}
+
+	err := DocDb.Write(batch, &opt.WriteOptions{})
+	return result, err
 }
 
 // 切词 AND 逻辑

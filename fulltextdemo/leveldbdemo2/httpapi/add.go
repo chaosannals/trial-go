@@ -6,7 +6,6 @@ import (
 
 	"github.com/chaosannals/fulltext/leveldbdemo2/keydb"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 func Add(ctx *gin.Context) {
@@ -19,19 +18,16 @@ func Add(ctx *gin.Context) {
 	}
 	fmt.Printf("add: %v\n", doc.Content)
 
-	id, seqs, err := doc.InsertAndCut()
-	if err != nil {
+	if r, err := doc.InsertAndCut(); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"message": err.Error(),
 		})
-		return
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result":  r,
+			"message": "ok",
+		})
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"id":      id,
-		"seqs":    seqs,
-		"message": "ok",
-	})
 }
 
 func AddBatch(ctx *gin.Context) {
@@ -43,21 +39,15 @@ func AddBatch(ctx *gin.Context) {
 		return
 	}
 
-	result := make(map[uuid.UUID][]string)
-
-	for _, doc := range docs {
-		id, seqs, err := doc.InsertAndCut()
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"message": err.Error(),
-			})
-			return
-		}
-		result[id] = seqs
+	if result, err := keydb.AddBatch(docs); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   err,
+			"message": "ok",
+		})
+	} else {
+		ctx.JSON(http.StatusOK, gin.H{
+			"result":  result,
+			"message": "ok",
+		})
 	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"result":  result,
-		"message": "ok",
-	})
 }

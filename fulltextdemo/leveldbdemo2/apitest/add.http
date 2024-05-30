@@ -29,7 +29,7 @@ Content-Type: application/json
         }
     },
     {
-        "plain": "中文分词测试23工具字段",
+        "plain": "中文分词测试23ABC工具字段",
         "content": {
             "text": "中文分词测试工具字段",
             "intInfo": 123,

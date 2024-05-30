@@ -89,18 +89,19 @@ func ImportData() error {
 		fmt.Printf("mysql task fetch row count: %d endId: %v\n", count, endId)
 		startId = endId
 
-		for _, row := range rows {
+		docs := make([]DocContent, count)
+		for i, row := range rows {
 			if plain, ok := row[plainKey].(string); ok {
-				doc := &DocContent{
+				docs[i] = DocContent{
 					Plain:   plain,
 					Content: row,
-				}
-				if _, _, err := doc.InsertAndCut(); err != nil {
-					fmt.Printf("mysql task insert task failed: %v\n", row)
 				}
 			} else {
 				fmt.Printf("mysql task invalid plainKey(%s) for %v\n", plainKey, row)
 			}
+		}
+		if _, err := AddBatch(docs); err != nil {
+			fmt.Printf("mysql task add batch error: %v\n", err)
 		}
 	}
 
