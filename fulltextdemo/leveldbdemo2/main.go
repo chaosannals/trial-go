@@ -26,6 +26,7 @@ func main() {
 
 	r := gin.Default()
 	r.GET("/ping", httpapi.Ping)
+	r.GET("/ngram", httpapi.Ngram)
 	r.GET("/query", httpapi.Query)
 	r.PUT("/add", httpapi.Add)
 	r.PUT("/add_batch", httpapi.AddBatch)
