@@ -101,12 +101,30 @@ func AddBatch(docs []DocContent) ([]AddResult, error) {
 	return result, err
 }
 
+func ParseUUIDSet(v []byte) (mapset.Set[uuid.UUID], error) {
+	vsc := len(v) / 16
+	vids := mapset.NewSetWithSize[uuid.UUID](vsc)
+	for i := 0; i < vsc; i++ {
+		if id, err := uuid.FromBytes(v[i*16 : (i+1)*16]); err != nil {
+			return vids, err
+		} else {
+			vids.Add(id)
+		}
+	}
+	return vids, nil
+}
+
+type QueryParam struct {
+	Plain   string
+	GroupBy *string
+}
+
 // 切词 AND 逻辑
-func Query(text string) ([]DocStore, error) {
+func Query(param *QueryParam) ([]DocStore, error) {
 	result := make([]DocStore, 0)
 
-	fmt.Printf("检索： %s\n", text)
-	seqs := Seg.CutSearch(text, true)
+	fmt.Printf("检索： %s\n", param.Plain)
+	seqs := Seg.CutSearch(param.Plain, true)
 
 	// 检索索引
 	ids := mapset.NewSet[uuid.UUID]()
@@ -121,13 +139,9 @@ func Query(text string) ([]DocStore, error) {
 			}
 		} else {
 			vsc := len(v) / 16
-			vids := mapset.NewSetWithSize[uuid.UUID](vsc)
-			for i := 0; i < vsc; i++ {
-				if id, err := uuid.FromBytes(v[i*16 : (i+1)*16]); err != nil {
-					return result, err
-				} else {
-					vids.Add(id)
-				}
+			vids, err := ParseUUIDSet(v)
+			if err != nil {
+				return result, err
 			}
 			fmt.Printf("命中关键词：%s  关联数: %d\n", seq, vsc)
 

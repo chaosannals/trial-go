@@ -25,7 +25,9 @@ func Query(ctx *gin.Context) {
 		return
 	}
 	fmt.Printf("Query: %v\n", param)
-	result, err := keydb.Query(param.Plain)
+	result, err := keydb.Query(&keydb.QueryParam{
+		Plain: param.Plain,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
