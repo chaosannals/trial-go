@@ -2,6 +2,9 @@ package demo
 
 import "fmt"
 
+// panic defer recover 机制比其他语言 的 try catch 机制，作用域上不是随意的。
+// 因为 defer 是函数作用域，所以 recover 的作用域也只能是函数作用域
+// 其他语言的 try catch 可以直接包裹代码形成作用域
 func HasRecover(name string, action func()) {
 	fmt.Printf("[%s] start\n", name)
 	defer func() {
