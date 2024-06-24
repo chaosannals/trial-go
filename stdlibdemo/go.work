@@ -4,4 +4,5 @@ use (
 	./iconvdemo
 	./iconvdemo2
 	./mapdemo
+	./sshdemo
 )

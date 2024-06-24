@@ -1,5 +1,7 @@
 # [trial-go](https://github.com/chaosannals/trial-go)
 
+官方提供的包搜索网站 https://pkg.go.dev/
+
 ## 命令
 
 ```bash
