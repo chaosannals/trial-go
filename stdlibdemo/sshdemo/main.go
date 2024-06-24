@@ -80,8 +80,8 @@ func ConnSsh(
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,
-		ssh.TTY_OP_ISPEED: 14400,
-		ssh.TTY_OP_OSPEED: 14400,
+		ssh.TTY_OP_ISPEED: 14400, // 输入速度
+		ssh.TTY_OP_OSPEED: 14400, // 输出速度
 	}
 
 	if err := session.RequestPty("xterm", 80, 40, modes); err != nil {
@@ -143,18 +143,23 @@ func (conn *SshConn) Exec(cmds ...string) error {
 			return err
 		}
 
+		// 这个读必须，不然无法确保命令执行完成
 		all, err := conn.ReadOutput(i + 1)
 		if err != nil {
 			return err
 		}
+
+		// 整屏幕刷新，可以在这里切入刷新屏幕
 		output = all
 	}
 
+	// 最后输出。
 	blocks := bytes.Split(output, []byte{conn.term})
 	for i, block := range blocks {
 		fmt.Print(string(block))
 		if len(block) > 0 {
 			fmt.Print(string(conn.term))
+			fmt.Print(" ")
 		}
 		if i < len(cmds) {
 			fmt.Println(cmds[i])
@@ -170,7 +175,7 @@ func (conn *SshConn) Exec(cmds ...string) error {
 func (conn *SshConn) ReadOutput(index int) ([]byte, error) {
 	output := append(make([]byte, 0), conn.output...)
 	for {
-		buf := make([]byte, 8192)
+		buf := make([]byte, 256)
 		n, err := conn.outBuf.Read(buf)
 		if err != nil && err != io.EOF {
 			return nil, err
@@ -179,8 +184,9 @@ func (conn *SshConn) ReadOutput(index int) ([]byte, error) {
 		if n > 0 {
 			output = append(output, buf[:n]...)
 
-			blocks := bytes.Split(output, []byte{conn.term})
-			if len(blocks) > index {
+			// 由于是整体输出，导致需要判断执行了多少个命令。
+			termCount := bytes.Count(output, []byte{conn.term})
+			if termCount > index {
 				t := bytes.LastIndexByte(output, conn.term)
 				if t > 0 {
 					output = output[:t+1]
