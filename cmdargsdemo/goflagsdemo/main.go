@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
@@ -57,7 +58,14 @@ func main() {
 	args, err := flags.ParseArgs(&opts, os.Args)
 	fmt.Println("parse end:")
 	if err != nil {
-		log.Fatalln(err)
+		if fe, ok := err.(*flags.Error); ok {
+			if fe.Type == flags.ErrHelp {
+				fmt.Printf("err help.\n")
+			}
+		} else {
+			fmt.Printf("err type: %v\n", reflect.TypeOf(err))
+			log.Fatalln(err)
+		}
 	}
 	fmt.Printf("args %v\n", args)
 	fmt.Printf("Verbosity: %v\n", opts.Verbose)
