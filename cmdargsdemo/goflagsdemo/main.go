@@ -46,7 +46,16 @@ var opts struct {
 }
 
 func main() {
+	// 这个函数在被解析的时候就会调用。
+	opts.Call = func(num string) {
+		fmt.Printf("call: %s \n", num)
+		// cmd := exec.Command("open", "callto:"+num)
+		// cmd.Start()
+		// cmd.Process.Release()
+	}
+	fmt.Println("parse start:")
 	args, err := flags.ParseArgs(&opts, os.Args)
+	fmt.Println("parse end:")
 	if err != nil {
 		log.Fatalln(err)
 	}
