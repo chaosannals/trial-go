@@ -6,26 +6,38 @@ import (
 	"unicode"
 )
 
-var keywords = map[string]bool{
-	"package": true,
-	"import":  true,
-	"const":   true,
-	"type":    true,
-	"struct":  true,
-	"func":    true,
-	"return":  true,
+type KEYWORD string
+
+const (
+	KW_PACKAGE KEYWORD = "package"
+	KW_IMPORT  KEYWORD = "import"
+	KW_CONST   KEYWORD = "const"
+	KW_TYPE    KEYWORD = "type"
+	KW_STRUCT  KEYWORD = "struct"
+	KW_FUNC    KEYWORD = "func"
+	KW_RETURN  KEYWORD = "return"
+)
+
+var keywords = map[KEYWORD]bool{
+	KW_PACKAGE: true,
+	KW_IMPORT:  true,
+	KW_CONST:   true,
+	KW_TYPE:    true,
+	KW_STRUCT:  true,
+	KW_FUNC:    true,
+	KW_RETURN:  true,
 }
 
 type LexemeType = string
 
 const (
-	LEX_STRING  = "string"
-	LEX_STRING2 = "string2"
-	LEX_KEYWORD = "keyword"
-	LEX_ID      = "id"
-	LEX_PUNCT   = "punct"
-	LEX_COMMENT = "comment"
-	LEX_NL      = "next line"
+	LEX_STRING  LexemeType = "string"
+	LEX_STRING2 LexemeType = "string2"
+	LEX_KEYWORD LexemeType = "keyword"
+	LEX_ID      LexemeType = "id"
+	LEX_PUNCT   LexemeType = "punct"
+	LEX_COMMENT LexemeType = "comment"
+	LEX_NL      LexemeType = "next line"
 )
 
 type Lexeme struct {
@@ -108,10 +120,10 @@ func (lexer *Lexer) nextChar() rune {
 	if c == rune('\n') {
 		lexer.row++
 		lexer.column = 1
-		lexer.result = append(lexer.result, Lexeme{
-			Type:    LEX_NL,
-			Content: "\n",
-		})
+		// lexer.result = append(lexer.result, Lexeme{
+		// 	Type:    LEX_NL,
+		// 	Content: "\n",
+		// })
 	} else {
 		lexer.column++
 	}
@@ -192,14 +204,16 @@ func (lexer *Lexer) matchIdOrKeyword() error {
 		c = lexer.nextChar()
 	}
 	text := string(word)
-	if _, ok := keywords[text]; ok {
+	if _, ok := keywords[KEYWORD(text)]; ok {
 		fmt.Printf("is keyword %s\n", text)
 		lexer.result = append(lexer.result, Lexeme{
+			Type:    LEX_KEYWORD,
 			Content: text,
 		})
 	} else {
 		fmt.Printf("is id %s\n", text)
 		lexer.result = append(lexer.result, Lexeme{
+			Type:    LEX_ID,
 			Content: text,
 		})
 	}

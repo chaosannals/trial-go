@@ -26,7 +26,21 @@ func main() {
 		if lexemes, err := readLexemes(file); err != nil {
 			log.Fatalln(err)
 		} else {
-			fmt.Println(lexemes)
+			// for _, lexeme := range lexemes {
+			// 	fmt.Println(lexeme)
+			// }
+			parser := &Parser{
+				index:   0,
+				lexemes: lexemes,
+				Results: []TypeInfo{},
+			}
+			if err := parser.ParseType(); err != nil {
+				log.Fatalln(err)
+			}
+			// fmt.Println(parser.Results)
+			for _, goType := range parser.Results {
+				makeTs(&goType)
+			}
 		}
 	}
 }
