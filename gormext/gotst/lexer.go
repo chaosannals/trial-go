@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 	"unicode"
 )
 
@@ -86,12 +85,12 @@ func readGoLexemes(srcPath string) ([]GoLexeme, error) {
 		err:    nil,
 	}
 
-	go func() {
-		for {
-			fmt.Printf("at: %d %d\n", lexer.row, lexer.column)
-			time.Sleep(time.Second * 4)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		fmt.Printf("at: %d %d\n", lexer.row, lexer.column)
+	// 		time.Sleep(time.Second * 4)
+	// 	}
+	// }()
 
 	err = lexer.lex()
 	return lexer.result, err
@@ -247,7 +246,7 @@ func (lexer *GoLexer) matchString() *GoLexer {
 	lexer.popChars(1)
 
 	text := string(word)
-	fmt.Printf("string: %s\n", text)
+	// fmt.Printf("string: %s\n", text)
 	lexer.result = append(lexer.result, GoLexeme{
 		Type:    LEX_STRING,
 		Content: text,
@@ -270,7 +269,7 @@ func (lexer *GoLexer) matchString2() *GoLexer {
 	lexer.popChars(1)
 
 	text := string(word)
-	fmt.Printf("string2: %s\n", text)
+	// fmt.Printf("string2: %s\n", text)
 	lexer.result = append(lexer.result, GoLexeme{
 		Type:    LEX_STRING2,
 		Content: text,
