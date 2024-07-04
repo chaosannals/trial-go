@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type GoField struct {
 	Name    string
@@ -22,7 +25,17 @@ func parseGoStruct(lexemes []GoLexeme) ([]GoStruct, error) {
 		results: []GoStruct{},
 	}
 
+	able := true
+	pable := &able
+	go func() {
+		for *pable {
+			fmt.Printf("at: %d %v\n", parser.index, parser.peekLexeme(0))
+			time.Sleep(time.Second * 4)
+		}
+	}()
+
 	err := parser.parse()
+	*pable = false
 	return parser.results, err
 }
 
@@ -112,6 +125,12 @@ func (parser *GoStructParser) matchField() (bool, error) {
 
 	comment := parser.peekLexeme(0)
 	if comment.Type == LEX_COMMENT {
+		field.Comment = comment.Content
+		parser.nextLexeme()
+	}
+
+	comment2 := parser.peekLexeme(0)
+	if comment2.Type == LEX_COMMENT2 {
 		field.Comment = comment.Content
 		parser.nextLexeme()
 	}

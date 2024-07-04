@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 	"unicode"
 )
 
@@ -20,12 +21,13 @@ const (
 )
 
 const (
-	LEX_STRING  GoLangLex = "string"
-	LEX_STRING2 GoLangLex = "string2"
-	LEX_KEYWORD GoLangLex = "keyword"
-	LEX_ID      GoLangLex = "id"
-	LEX_PUNCT   GoLangLex = "punct"
-	LEX_COMMENT GoLangLex = "comment"
+	LEX_STRING   GoLangLex = "string"
+	LEX_STRING2  GoLangLex = "string2"
+	LEX_KEYWORD  GoLangLex = "keyword"
+	LEX_ID       GoLangLex = "id"
+	LEX_PUNCT    GoLangLex = "punct"
+	LEX_COMMENT  GoLangLex = "comment"
+	LEX_COMMENT2 GoLangLex = "comment2"
 )
 
 const (
@@ -85,14 +87,17 @@ func readGoLexemes(srcPath string) ([]GoLexeme, error) {
 		err:    nil,
 	}
 
-	// go func() {
-	// 	for {
-	// 		fmt.Printf("at: %d %d\n", lexer.row, lexer.column)
-	// 		time.Sleep(time.Second * 4)
-	// 	}
-	// }()
+	able := true
+	pable := &able
+	go func() {
+		for *pable {
+			fmt.Printf("[%s]at: %d %d\n", srcPath, lexer.row, lexer.column)
+			time.Sleep(time.Second * 4)
+		}
+	}()
 
 	err = lexer.lex()
+	*pable = false
 	return lexer.result, err
 }
 
@@ -110,6 +115,7 @@ func (lexer *GoLexer) lex() error {
 		if err := lexer.
 			skipBlank().
 			matchComment().
+			matchComment2().
 			matchPunct().
 			matchIdOrKeyword().
 			matchString().
@@ -172,9 +178,40 @@ func (lexer *GoLexer) matchComment() *GoLexer {
 		comment = append(comment, c)
 		c = lexer.nextChar()
 	}
+
 	lexer.result = append(lexer.result, GoLexeme{
 		Type:    LEX_COMMENT,
 		Content: string(comment),
+	})
+	return lexer
+}
+
+func (lexer *GoLexer) matchComment2() *GoLexer {
+	if lexer.err != nil {
+		return lexer
+	}
+
+	c1 := lexer.peekChar(0)
+	c2 := lexer.peekChar(1)
+	if c1 != '/' || c2 != '*' {
+		return lexer
+	}
+	lexer.popChars(2)
+
+	c := lexer.nextChar()
+	comment2 := []rune{}
+	for c != RUNE_EOF {
+		if c == '*' && lexer.peekChar(1) == '/' {
+			lexer.popChars(2)
+			break
+		}
+		comment2 = append(comment2, c)
+		c = lexer.nextChar()
+	}
+
+	lexer.result = append(lexer.result, GoLexeme{
+		Type:    LEX_COMMENT2,
+		Content: string(comment2),
 	})
 	return lexer
 }
