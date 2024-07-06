@@ -14,9 +14,10 @@ var OPTS struct {
 	InputDir  string `short:"d" long:"dir"`
 	LexOnly   bool   `short:"l" long:"lex"`
 	ParseOnly bool   `short:"p" long:"parse"`
+	Separator bool   `short:"s" long:"separator"`
 }
 
-func makeByFile(inputPath string) []GoStruct {
+func makeFrom(inputPath string) []GoStruct {
 	lexemes, err := readGoLexemes(inputPath)
 	if err != nil {
 		log.Fatalln(err)
@@ -43,30 +44,33 @@ func makeByFile(inputPath string) []GoStruct {
 	return structs
 }
 
-func main() {
-	if _, err := flags.ParseArgs(&OPTS, os.Args); err != nil {
-		log.Fatalln(err)
+func makeTsWith(inputPath string, n int) int {
+	structs := makeFrom(inputPath)
+	for i, s := range structs {
+		if OPTS.Separator {
+			fmt.Printf("%d ================== start\n", n+i)
+		}
+		makeTs(&s)
+		if OPTS.Separator {
+			fmt.Printf("%d ================== end\n", n+i)
+		}
 	}
+	return len(structs) + n
+}
 
+func glob() ([]string, error) {
 	workDir, err := os.Getwd()
 	if err != nil {
-		log.Fatalln(err)
+		return nil, err
 	}
 
-	n := 0
+	result := []string{}
 	inputPath := OPTS.InputPath
 	if len(inputPath) > 0 {
 		if !filepath.IsAbs(inputPath) {
 			inputPath = filepath.Join(workDir, inputPath)
 		}
-
-		structs := makeByFile(inputPath)
-		for i, s := range structs {
-			fmt.Printf("%d ================== start\n", i)
-			makeTs(&s)
-			fmt.Printf("%d ================== end\n", i)
-		}
-		n += len(structs)
+		result = append(result, inputPath)
 	}
 
 	inputDir := OPTS.InputDir
@@ -77,16 +81,26 @@ func main() {
 		pattern := filepath.Join(inputDir, "*.go")
 		inputPaths, err := filepath.Glob(pattern)
 		if err != nil {
-			log.Fatalln(err)
+			return nil, err
 		}
-		for _, inputPath := range inputPaths {
-			structs := makeByFile(inputPath)
-			for i, s := range structs {
-				fmt.Printf("%d ================== start\n", n+i)
-				makeTs(&s)
-				fmt.Printf("%d ================== end\n", n+i)
-			}
-			n += len(structs)
-		}
+		result = append(result, inputPaths...)
+	}
+
+	return result, nil
+}
+
+func main() {
+	if _, err := flags.ParseArgs(&OPTS, os.Args); err != nil {
+		log.Fatalln(err)
+	}
+
+	inputPaths, err := glob()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	n := 0
+	for _, inputPath := range inputPaths {
+		n = makeTsWith(inputPath, n)
 	}
 }
