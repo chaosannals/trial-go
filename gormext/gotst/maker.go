@@ -36,10 +36,24 @@ func convTsType(fieldTypes []string) string {
 	return fieldTypes[0]
 }
 
+func convTsComment(field *GoField) string {
+	if len(field.Comment2) > 0 {
+		return fmt.Sprintf("\n/* %s */", field.Comment2)
+	} else {
+		return fmt.Sprintf("// %s", field.Comment)
+	}
+}
+
 func makeTs(goType *GoStruct) {
 	result := fmt.Sprintf("export type %s = {", goType.Name)
 	for _, field := range goType.Fields {
-		result = fmt.Sprintf("%s\n    %s: %s; // %s", result, convTsName(&field), convTsType(field.Type), field.Comment)
+		result = fmt.Sprintf(
+			"%s\n    %s: %s; %s",
+			result,
+			convTsName(&field),
+			convTsType(field.Type),
+			convTsComment(&field),
+		)
 	}
 	result = fmt.Sprintf("%s\n};", result)
 	fmt.Println(result)

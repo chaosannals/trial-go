@@ -6,10 +6,11 @@ import (
 )
 
 type GoField struct {
-	Name    string
-	Type    []string
-	Tag     string
-	Comment string
+	Name     string
+	Type     []string
+	Tag      string
+	Comment  string
+	Comment2 string
 }
 
 type GoStruct struct {
@@ -131,7 +132,7 @@ func (parser *GoStructParser) matchField() (bool, error) {
 
 	comment2 := parser.peekLexeme(0)
 	if comment2.Type == LEX_COMMENT2 {
-		field.Comment = comment.Content
+		field.Comment2 = comment2.Content
 		parser.nextLexeme()
 	}
 
