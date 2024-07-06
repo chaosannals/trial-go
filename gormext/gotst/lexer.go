@@ -87,17 +87,12 @@ func readGoLexemes(srcPath string) ([]GoLexeme, error) {
 		err:    nil,
 	}
 
-	able := true
-	pable := &able
-	go func() {
-		for *pable {
-			fmt.Printf("[%s]at: %d %d\n", srcPath, lexer.row, lexer.column)
-			time.Sleep(time.Second * 4)
-		}
-	}()
+	cancel := goTimeout(time.Second*4, func() {
+		fmt.Printf("[%s]at: %d %d\n", srcPath, lexer.row, lexer.column)
+	})
+	defer cancel()
 
 	err = lexer.lex()
-	*pable = false
 	return lexer.result, err
 }
 

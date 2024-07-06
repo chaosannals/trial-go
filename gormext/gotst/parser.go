@@ -26,17 +26,12 @@ func parseGoStruct(lexemes []GoLexeme) ([]GoStruct, error) {
 		results: []GoStruct{},
 	}
 
-	able := true
-	pable := &able
-	go func() {
-		for *pable {
-			fmt.Printf("at: %d %v\n", parser.index, parser.peekLexeme(0))
-			time.Sleep(time.Second * 4)
-		}
-	}()
+	cancel := goTimeout(time.Second*4, func() {
+		fmt.Printf("parse at: %d %v\n", parser.index, parser.peekLexeme(0))
+	})
+	defer cancel()
 
 	err := parser.parse()
-	*pable = false
 	return parser.results, err
 }
 
