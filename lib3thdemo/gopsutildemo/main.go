@@ -76,15 +76,36 @@ func main() {
 			if err != nil {
 				fmt.Printf("error name: %d %v\n", p.Pid, err)
 			}
+			username, err := p.Username()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error username: %d %v\n", p.Pid, err)
+			}
 			cpuPercent, err := p.CPUPercent()
 			if err != nil && p.Pid > 4 {
 				fmt.Printf("error cpu: %d %v\n", p.Pid, err)
 			}
+			memoryInfo, err := p.MemoryInfo()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error mem: %d %v\n", p.Pid, err)
+			}
+			memoryInfoEx, err := p.MemoryInfoEx()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error mem ex: %d %v\n", p.Pid, err)
+			}
+			memoryPercent, err := p.MemoryPercent()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error mem percent: %d %v\n", p.Pid, err)
+			}
 			fmt.Printf(
-				"[%d] %s %f\n",
+				"[%d | %d] %s(%s) %f %v %v %v\n",
 				i,
+				p.Pid,
 				name,
+				username,
 				cpuPercent,
+				memoryInfo,
+				memoryInfoEx,
+				memoryPercent,
 			)
 		}
 	}
