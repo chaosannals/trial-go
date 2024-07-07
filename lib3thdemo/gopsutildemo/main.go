@@ -7,6 +7,7 @@ import (
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/disk"
 	"github.com/shirou/gopsutil/v4/mem"
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 func main() {
@@ -61,6 +62,30 @@ func main() {
 			} else {
 				fmt.Printf("[%d] %v\n", i, du)
 			}
+		}
+	}
+
+	fmt.Println("====================================")
+	// 进程
+	if ps, err := process.Processes(); err != nil {
+		log.Fatalln(err)
+	} else {
+		fmt.Println(ps)
+		for i, p := range ps {
+			name, err := p.Name()
+			if err != nil {
+				fmt.Printf("error name: %d %v\n", p.Pid, err)
+			}
+			cpuPercent, err := p.CPUPercent()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error cpu: %d %v\n", p.Pid, err)
+			}
+			fmt.Printf(
+				"[%d] %s %f\n",
+				i,
+				name,
+				cpuPercent,
+			)
 		}
 	}
 }
