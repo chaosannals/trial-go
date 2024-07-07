@@ -84,6 +84,14 @@ func main() {
 			if err != nil && p.Pid > 4 {
 				fmt.Printf("error cpu: %d %v\n", p.Pid, err)
 			}
+			cmdline, err := p.Cmdline()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error cmdline: %d %v\n", p.Pid, err)
+			}
+			cwd, err := p.Cwd()
+			if err != nil && p.Pid > 4 {
+				fmt.Printf("error cwd: %d %v\n", p.Pid, err)
+			}
 			memoryInfo, err := p.MemoryInfo()
 			if err != nil && p.Pid > 4 {
 				fmt.Printf("error mem: %d %v\n", p.Pid, err)
@@ -97,12 +105,14 @@ func main() {
 				fmt.Printf("error mem percent: %d %v\n", p.Pid, err)
 			}
 			fmt.Printf(
-				"[%d | %d] %s(%s) %f %v %v %v\n",
+				"[%d | %d] %s(%s) %f \ncmd: %s \ndir: %s \n%v %v %v\n",
 				i,
 				p.Pid,
 				name,
 				username,
 				cpuPercent,
+				cmdline,
+				cwd,
 				memoryInfo,
 				memoryInfoEx,
 				memoryPercent,
