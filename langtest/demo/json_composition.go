@@ -6,6 +6,9 @@ import (
 	"log"
 )
 
+// GOLANG 指针是反多态的。
+// 多态只通过 接口 使用。
+
 type JsonCompositionA struct {
 	Afloat float32 `json:"afloat"`
 }
