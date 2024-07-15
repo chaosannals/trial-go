@@ -23,7 +23,7 @@ func convTsName(field *GoField) string {
 
 func convTsType(fieldTypes []string) string {
 	switch fieldTypes[0] {
-	case "int32", "uint32", "float32":
+	case "int32", "uint32", "int64", "uint64", "float32", "float64":
 		return "number"
 	case "time":
 		return "string"
