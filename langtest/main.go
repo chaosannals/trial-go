@@ -7,6 +7,6 @@ import (
 
 func main() {
 	fmt.Println("start")
-	demo.JsonCompositionDemo()
+	demo.ReflectionTypenameDemo()
 	fmt.Println("end")
 }
