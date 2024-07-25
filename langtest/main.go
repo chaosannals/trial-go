@@ -7,6 +7,6 @@ import (
 
 func main() {
 	fmt.Println("start")
-	demo.ReflectionTypenameDemo()
+	demo.TypeDefineDemo()
 	fmt.Println("end")
 }
