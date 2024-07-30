@@ -322,6 +322,8 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 	}
 	parser.pos += 4 + int32(length)
 
+	objStyle := xlsStyleInfo{}
+
 	if !parser.isReadDataOnly {
 		// offset:  0; size: 2; Index to FONT record
 		fontIndex, err := readUInt2(recordData, 0)
@@ -336,6 +338,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 
 		if int(fontIndex) < len(parser.fonts) {
 			fmt.Printf("XF 字体： %s\n", parser.fonts[fontIndex].Name)
+			objStyle.Font = parser.fonts[fontIndex]
 		} else {
 			fmt.Printf("XF 字体不匹配： %d\n", fontIndex)
 		}
@@ -353,6 +356,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 			formatCode = buildInFormatCode(formatIndex)
 			fmt.Printf("XF 格式化串(内建): %s\n", formatCode)
 		}
+		objStyle.NumberFormatCode = formatCode
 
 		// offset:  4; size: 2; XF type, cell protection, and parent style XF
 		// bit 2-0; mask 0x0007; XF_TYPE_PROT
@@ -362,8 +366,19 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 		}
 		// bit 0; mask 0x01; 1 = cell is locked
 		isLocked := xfTypeProt & 0x01
+		if isLocked {
+			objStyle.Protection.Locked = PROTECTION_INHERIT
+		} else {
+			objStyle.Protection.Locked = PROTECTION_UNPROTECTED
+		}
+
 		// bit 1; mask 0x02; 1 = Formula is hidden
 		isHidden := (xfTypeProt & 0x02) >> 1
+		if isHidden {
+			objStyle.Protection.Hidden = PROTECTION_PROTECTED
+		} else {
+			objStyle.Protection.Hidden = PROTECTION_UNPROTECTED
+		}
 		// bit 2; mask 0x04; 0 = Cell XF, 1 = Cell Style XF
 		isCellStyleXf := (xfTypeProt & 0x04) >> 2
 
@@ -372,12 +387,17 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 		// offset:  6; size: 1; Alignment and text break
 		// bit 2-0, mask 0x07; horizontal alignment 横向对齐
 		horAlign := recordData[6] & 0x07
+		objStyle.Align.cellHorizontal(horAlign)
 
 		// bit 3, mask 0x08; wrap text  换行
 		wrapText := (recordData[6] & 0x08) >> 3
+		if wrapText > 0 {
+			objStyle.Align.WrapText = true
+		}
 
 		// bit 6-4, mask 0x70; vertical alignment 纵向对齐
 		vertAlign := (recordData[6] & 0x70) >> 3
+		objStyle.Align.cellVertical(vertAlign)
 
 		fmt.Printf("横向对齐：%d 换行: %d 纵向对齐: %d\n", horAlign, wrapText, vertAlign)
 
@@ -393,13 +413,18 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 				rotation = int16(TEXTROTATION_STACK_PHPSPREADSHEET)
 			}
 			fmt.Printf("旋转角度 %d\n", rotation)
+			objStyle.Align.TextRotation = rotation
 
 			// offset:  8; size: 1; Indentation, shrink to cell size, and text direction
 			// bit: 3-0; mask: 0x0F; indent level
 			indent := recordData[8] & 0x0F
+			objStyle.Align.Indent = indent
 
 			// bit: 4; mask: 0x10; 1 = shrink content to fit into cell
 			shrinkToFit := recordData[8] & 0x10 >> 4
+			if shrinkToFit > 0 {
+				objStyle.Align.ShrinkToFit = true
+			}
 
 			fmt.Printf("XF indent: %d shrinkToFit: %d\n", indent, shrinkToFit)
 
@@ -412,20 +437,46 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 				return err
 			}
 			leftStyle := bordersStyle & 0x0000000F
+			objStyle.Borders.Left.setStyle(leftStyle)
+
 			// bit: 7-4; mask: 0x000000F0; right style
 			rightStyle := (bordersStyle & 0x000000F0) >> 4
+			objStyle.Borders.Right.setStyle(rightStyle)
+
 			// bit: 11-8; mask: 0x00000F00; top style
 			topStyle := (bordersStyle & 0x00000F00) >> 8
+			objStyle.Borders.Top.setStyle(topStyle)
+
 			// bit: 15-12; mask: 0x0000F000; bottom style
 			bottomStyle := (bordersStyle & 0x0000F000) >> 12
+			objStyle.Borders.Bottom.setStyle(bottomStyle)
+
 			// bit: 22-16; mask: 0x007F0000; left color
 			leftColor := (bordersStyle & 0x007F0000) >> 16
+			objStyle.Borders.Left.ColorIndex = leftColor
+
 			// bit: 29-23; mask: 0x3F800000; right color
 			rightColor := (bordersStyle & 0x3F800000) >> 23
+			objStyle.Borders.Right.ColorIndex = rightColor
+
 			// bit: 30; mask: 0x40000000; 1 = diagonal line from top left to right bottom
 			diagonalDown := (bordersStyle & 0x40000000) >> 30
 			// bit: 31; mask: 0x800000; 1 = diagonal line from bottom left to top right
 			diagonalUp := (uint32(bordersStyle) & 0x80000000) >> 31
+
+			if diagonalUp > 0 {
+				if diagonalDown > 0 {
+					objStyle.Borders.DiagonalDirection = DIAGONAL_BOTH
+				} else {
+					objStyle.Borders.DiagonalDirection = DIAGONAL_UP
+				}
+			} else {
+				if diagonalDown > 0 {
+					objStyle.Borders.DiagonalDirection = DIAGONAL_DOWN
+				} else {
+					objStyle.Borders.DiagonalDirection = DIAGONAL_NONE
+				}
+			}
 
 			fmt.Printf("边框样式： 左: %d 右：%d 上：%d 下：%d 颜色：左：%d 右： %d 斜线: 下: %d 上：%d\n", leftStyle, rightStyle, topStyle, bottomStyle, leftColor, rightColor, diagonalDown, diagonalUp)
 
@@ -436,18 +487,23 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 				return err
 			}
 			topColor := bordersStyle2 & 0x0000007F
+			objStyle.Borders.Top.ColorIndex = topColor
 
 			// bit: 13-7; mask: 0x00003F80; bottom color
 			bottomColor := (bordersStyle2 & 0x00003F80) >> 7
+			objStyle.Borders.Bottom.ColorIndex = bottomColor
 
 			// bit: 20-14; mask: 0x001FC000; diagonal color
 			diagonalColor := (bordersStyle2 & 0x001FC000) >> 14
+			objStyle.Borders.Diagonal.ColorIndex = diagonalColor
 
 			// bit: 24-21; mask: 0x01E00000; diagonal style
 			diagonalStyle := (bordersStyle2 & 0x01E00000) >> 21
+			objStyle.Borders.Diagonal.setStyle(diagonalStyle)
 
 			// bit: 31-26; mask: 0xFC000000 fill pattern
 			fillPattern := (uint32(bordersStyle2) & 0xFC000000) >> 28
+			objStyle.Fill.setType(fillPattern)
 
 			fmt.Printf("边框样式2： 颜色：上： %d 下 %d ：斜线 颜色 %d 样式: %d 填充模式：%d\n", topColor, bottomColor, diagonalColor, diagonalStyle, fillPattern)
 
@@ -458,8 +514,12 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 				return err
 			}
 			startColorIndex := colorIndex & 0x007F
+			objStyle.Fill.StartColorIndex = startColorIndex
+
 			// bit: 13-7; mask: 0x3F80; color index for pattern background
 			endColorIndex := (colorIndex & 0x3F80) >> 7
+			objStyle.Fill.EndColorIndex = endColorIndex
+
 			fmt.Printf("前景色: %d 背景色: %d", startColorIndex, endColorIndex)
 		} else {
 			// BIFF5
@@ -480,6 +540,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 			case 3:
 				rotation = -90
 			}
+			objStyle.Align.TextRotation = rotation
 			fmt.Printf("BIFF5 角度：%d\n", rotation)
 
 			// offset: 8; size: 4; cell border lines and background area
@@ -490,21 +551,27 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 
 			// bit: 6-0; mask: 0x0000007F; color index for pattern color
 			startColorIndex := borderAndBackground & 0x0000007F
+			objStyle.Fill.StartColorIndex = uint16(startColorIndex)
 
 			// bit: 13-7; mask: 0x00003F80; color index for pattern background
 			endColorIndex := (borderAndBackground & 0x00003F80) >> 7
+			objStyle.Fill.EndColorIndex = uint16(endColorIndex)
 
 			// bit: 21-16; mask: 0x003F0000; fill pattern
 			fillPatter := (borderAndBackground & 0x003F0000) >> 16
+			objStyle.Fill.setType(uint32(fillPatter))
 
 			// bit: 24-22; mask: 0x01C00000; bottom line style
 			bottomLineStyle := (borderAndBackground & 0x01C00000) >> 22
+			objStyle.Borders.Bottom.setStyle(bottomLineStyle)
 
 			// bit: 31-25; mask: 0xFE000000; bottom line color
-			colorIndex := (uint32(borderAndBackground) & 0xFE000000) >> 25
+			bottomColorIndex := (uint32(borderAndBackground) & 0xFE000000) >> 25
+			objStyle.Borders.Bottom.ColorIndex = int32(bottomColorIndex)
 
-			fmt.Printf("BIFF5 前景色: %d 背景色： %d 填充色 %d 底部线样式 %d 颜色 %d\n", startColorIndex, endColorIndex, fillPatter, bottomLineStyle, colorIndex)
+			fmt.Printf("BIFF5 前景色: %d 背景色： %d 填充色 %d 底部线样式 %d 颜色 %d\n", startColorIndex, endColorIndex, fillPatter, bottomLineStyle, bottomColorIndex)
 
+			// TODO
 			// offset: 12; size: 4; cell border lines
 			borderLines, err := readInt4(recordData, 12)
 			if err != nil {
@@ -553,7 +620,57 @@ func (parser *xlsBookParser) parseXfExt(workbook []byte) error {
 	parser.pos += 4 + int32(length)
 
 	if !parser.isReadDataOnly {
-		
+		// offset: 0; size: 2; 0x087D = repeated header
+		// offset: 2; size: 2
+		// offset: 4; size: 8; not used
+		// offset: 12; size: 2; record version
+		// offset: 14; size: 2; index to XF record which this record modifies
+		ixfe, err := readUInt2(recordData, 14)
+		if err != nil {
+			return err
+		}
+
+		// offset: 16; size: 2; not used
+		// offset: 18; size: 2; number of extension properties that follow
+		cexts, err := readUInt2(recordData, 18)
+		if err != nil {
+			return err
+		}
+		// start reading the actual extension data
+		offset := int32(20)
+		for offset < int32(length) {
+			// extension type
+			extType, err := readUInt2(recordData, offset)
+			if err != nil {
+				return err
+			}
+
+			// extension length
+			cb, err := readUInt2(recordData, offset+2)
+			if err != nil {
+				return err
+			}
+
+			// extension data
+			extData := recordData[offset+4 : offset+4+int32(cb)]
+
+			switch extType {
+			case 4: // fill start color
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("RGB: %s\n", rgb)
+
+					// modify the relevant style property
+					// TODO
+				}
+			}
+		}
 	}
 
 	return nil

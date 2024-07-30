@@ -1,5 +1,10 @@
 package xlsrd4
 
 type xlsStyleInfo struct {
-	FontIndex uint16
+	Font             xlsFontInfo
+	NumberFormatCode string
+	Protection       xlsProtection
+	Align            xlsAlign
+	Borders          xlsBorders
+	Fill             xlsFill
 }
