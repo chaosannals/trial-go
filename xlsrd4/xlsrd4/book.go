@@ -204,10 +204,7 @@ func LoadSpreadsheetFromFile(xlsPath string) (*XlsSpreadsheet, error) {
 	}
 	err = spreadsheet.readDocumentSummaryInfo(book)
 
-	parser := &xlsBookParser{
-		pos:      0,
-		codePage: 1252,
-	}
+	parser := newParser()
 	dataSize := int32(len(book.workbook))
 
 parserLoop:

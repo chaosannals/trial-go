@@ -14,12 +14,29 @@ type xlsBookParser struct {
 	fonts   []xlsFontInfo
 	formats map[uint16]string
 
-	styles   map[uint16]xlsStyleInfo
-	xfStyles map[uint16]xlsStyleInfo
+	styles         map[uint16]xlsStyleInfo
+	xfCellArr      []xlsStyleInfo
+	xfCellStyleArr []xlsStyleInfo
+	xfCellMap      map[uint16]xlsStyleInfo
+	xfCellStyleMap map[uint16]xlsStyleInfo
 
 	xfIndex int
 
 	isReadDataOnly bool // [功能]只读数据不读样式
+}
+
+func newParser() *xlsBookParser {
+	return &xlsBookParser{
+		pos:            0,
+		codePage:       1252,
+		fonts:          make([]xlsFontInfo, 0),
+		formats:        make(map[uint16]string),
+		styles:         make(map[uint16]xlsStyleInfo),
+		xfCellArr:      make([]xlsStyleInfo, 0),
+		xfCellStyleArr: make([]xlsStyleInfo, 0),
+		xfCellMap:      make(map[uint16]xlsStyleInfo),
+		xfCellStyleMap: map[uint16]xlsStyleInfo{},
+	}
 }
 
 func (parser *xlsBookParser) parseSheet(workbook []byte) (*xlsBookSheet, error) {
@@ -366,7 +383,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 		}
 		// bit 0; mask 0x01; 1 = cell is locked
 		isLocked := xfTypeProt & 0x01
-		if isLocked {
+		if isLocked > 0 {
 			objStyle.Protection.Locked = PROTECTION_INHERIT
 		} else {
 			objStyle.Protection.Locked = PROTECTION_UNPROTECTED
@@ -374,7 +391,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 
 		// bit 1; mask 0x02; 1 = Formula is hidden
 		isHidden := (xfTypeProt & 0x02) >> 1
-		if isHidden {
+		if isHidden > 0 {
 			objStyle.Protection.Hidden = PROTECTION_PROTECTED
 		} else {
 			objStyle.Protection.Hidden = PROTECTION_UNPROTECTED
@@ -387,7 +404,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 		// offset:  6; size: 1; Alignment and text break
 		// bit 2-0, mask 0x07; horizontal alignment 横向对齐
 		horAlign := recordData[6] & 0x07
-		objStyle.Align.cellHorizontal(horAlign)
+		objStyle.Align.cellHorizontal(int(horAlign))
 
 		// bit 3, mask 0x08; wrap text  换行
 		wrapText := (recordData[6] & 0x08) >> 3
@@ -397,7 +414,7 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 
 		// bit 6-4, mask 0x70; vertical alignment 纵向对齐
 		vertAlign := (recordData[6] & 0x70) >> 3
-		objStyle.Align.cellVertical(vertAlign)
+		objStyle.Align.cellVertical(int(vertAlign))
 
 		fmt.Printf("横向对齐：%d 换行: %d 纵向对齐: %d\n", horAlign, wrapText, vertAlign)
 
@@ -413,12 +430,12 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 				rotation = int16(TEXTROTATION_STACK_PHPSPREADSHEET)
 			}
 			fmt.Printf("旋转角度 %d\n", rotation)
-			objStyle.Align.TextRotation = rotation
+			objStyle.Align.TextRotation = int(rotation)
 
 			// offset:  8; size: 1; Indentation, shrink to cell size, and text direction
 			// bit: 3-0; mask: 0x0F; indent level
 			indent := recordData[8] & 0x0F
-			objStyle.Align.Indent = indent
+			objStyle.Align.Indent = int(indent)
 
 			// bit: 4; mask: 0x10; 1 = shrink content to fit into cell
 			shrinkToFit := recordData[8] & 0x10 >> 4
@@ -571,7 +588,6 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 
 			fmt.Printf("BIFF5 前景色: %d 背景色： %d 填充色 %d 底部线样式 %d 颜色 %d\n", startColorIndex, endColorIndex, fillPatter, bottomLineStyle, bottomColorIndex)
 
-			// TODO
 			// offset: 12; size: 4; cell border lines
 			borderLines, err := readInt4(recordData, 12)
 			if err != nil {
@@ -579,30 +595,48 @@ func (parser *xlsBookParser) parseXf(workbook []byte) error {
 			}
 			// bit: 2-0; mask: 0x00000007; top line style
 			topLineStyle := borderLines & 0x00000007
+			objStyle.Borders.Top.setStyle(topLineStyle)
+
 			// bit: 5-3; mask: 0x00000038; left line style
 			leftLineStyle := (borderLines & 0x00000038) >> 3
+			objStyle.Borders.Left.setStyle(leftLineStyle)
+
 			// bit: 8-6; mask: 0x000001C0; right line style
 			rightLineStyle := (borderLines & 0x000001C0) >> 6
+			objStyle.Borders.Right.setStyle(rightLineStyle)
+
 			// bit: 15-9; mask: 0x0000FE00; top line color index
 			topLineColor := (borderLines & 0x0000FE00) >> 9
+			objStyle.Borders.Top.ColorIndex = topLineColor
+
 			// bit: 22-16; mask: 0x007F0000; left line color index
 			leftLineColor := (borderLines & 0x007F0000) >> 16
+			objStyle.Borders.Left.ColorIndex = leftLineColor
+
 			// bit: 29-23; mask: 0x3F800000; right line color index
 			rightLineColor := (borderLines & 0x3F800000) >> 23
+			objStyle.Borders.Right.ColorIndex = rightLineColor
 
 			fmt.Printf("线 样式： 上： %d 左 %d 右 %d  颜色 上 %d 左 %d 右 %d\n", topLineStyle, leftLineStyle, rightLineStyle, topLineColor, leftLineColor, rightLineColor)
 		}
 
-		// TODO 保存信息
-		// if isCellStyleXf > 0 {
-		// 	if parser.xfIndex == 0 {
+		// Excel 的 xf 格式总是如下，第一个是样式，之后跟随的都是 xfCell
+		// xfCellStyles xfCell xfCell xfCell
+		// add cellStyleXf or cellXf and update mapping
+		if isCellStyleXf > 0 {
+			// we only read one style XF record which is always the first
+			if parser.xfIndex == 0 {
+				parser.xfCellStyleArr = append(parser.xfCellStyleArr, objStyle)
+				parser.xfCellStyleMap[uint16(parser.xfIndex)] = objStyle
+			}
+		} else {
+			// we read all cell XF records
+			parser.xfCellArr = append(parser.xfCellArr, objStyle)
+			parser.xfCellMap[uint16(parser.xfIndex)] = objStyle
+		}
 
-		// 	}
-		// } else {
-
-		// }
-
-		parser.xfIndex += 1
+		// 递增 xf 索引
+		parser.xfIndex++
 	}
 
 	return nil
@@ -629,6 +663,7 @@ func (parser *xlsBookParser) parseXfExt(workbook []byte) error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("ixfe: %v\n", ixfe)
 
 		// offset: 16; size: 2; not used
 		// offset: 18; size: 2; number of extension properties that follow
@@ -636,6 +671,8 @@ func (parser *xlsBookParser) parseXfExt(workbook []byte) error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("cexts: %v\n", cexts)
+
 		// start reading the actual extension data
 		offset := int32(20)
 		for offset < int32(length) {
@@ -664,12 +701,137 @@ func (parser *xlsBookParser) parseXfExt(workbook []byte) error {
 
 				if xclfType == 2 {
 					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
-					fmt.Printf("RGB: %s\n", rgb)
+					fmt.Printf("start RGB: %s\n", rgb)
 
 					// modify the relevant style property
-					// TODO
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Fill.StartColor = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Fill.StartColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 5: // fill end color
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("end RGB: %s\n", rgb)
+
+					// modify the relevant style property
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Fill.EndColor = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Fill.EndColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 7: // border color top
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("border color top RGB: %s\n", rgb)
+
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Borders.Top.Color = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Borders.Top.ColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 8: // border color bottom
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("border color top RGB: %s\n", rgb)
+
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Borders.Bottom.Color = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Borders.Bottom.ColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 9: // border color left
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("border color top RGB: %s\n", rgb)
+
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Borders.Left.Color = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Borders.Left.ColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 10:
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("border color top RGB: %s\n", rgb)
+
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Borders.Right.Color = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Borders.Right.ColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 11: // border color diagonal
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("border color top RGB: %s\n", rgb)
+
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Borders.Diagonal.Color = xlsColor(rgb)
+						// 这代码不知道他哪里抄的，这个字段不用，忽略掉了。
+						v.Borders.Diagonal.ColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
+				}
+			case 13: // font color
+				xclfType, err := readUInt2(extData, 0)
+				if err != nil {
+					return err
+				}
+				xclrValue := extData[4 : 4+4]
+				if xclfType == 2 {
+					rgb := fmt.Sprintf("%02X%02X%02X", xclrValue[0], xclrValue[1], xclrValue[2])
+					fmt.Printf("border color top RGB: %s\n", rgb)
+
+					if v, ok := parser.xfCellMap[ixfe]; ok {
+						v.Font.Color = xlsColor(rgb)
+						v.Font.ColorIndex = 0 // normal color index does not apply, discard
+						parser.xfCellMap[ixfe] = v
+					}
 				}
 			}
+			offset += int32(cb)
 		}
 	}
 

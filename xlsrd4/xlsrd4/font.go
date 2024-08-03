@@ -6,6 +6,7 @@ type xlsFontInfo struct {
 	IsItalic        bool
 	IsUnderlined    bool
 	IsStrikethrough bool
+	Color           xlsColor
 	ColorIndex      uint16
 	Weight          uint16
 	EscapementType  uint16
