@@ -27,6 +27,21 @@ type xlsBookSheet struct {
 	Type   uint8
 }
 
+type xlsExternalBookType string
+
+const (
+	XLS_EXTERNAL_BOOK_TYPE_EXTERNAL    xlsExternalBookType = "external"
+	XLS_EXTERNAL_BOOK_TYPE_INTERNAL    xlsExternalBookType = "internal"
+	XLS_EXTERNAL_BOOK_TYPE_ADD_IN_FUNC xlsExternalBookType = "addInFunction"
+	XLS_EXTERNAL_BOOK_TYPE_DDE_OR_OLE  xlsExternalBookType = "DDEorOLE"
+)
+
+type xlsExternalBook struct {
+	Type               xlsExternalBookType
+	EncodedUrl         string
+	ExternalSheetNames []string
+}
+
 func ReadXlsFile(xlsPath string) (*XlsBook, error) {
 	oleFile, err := readOleFile(xlsPath)
 	if err != nil {
@@ -251,6 +266,28 @@ parserLoop:
 			}
 		case XLS_TYPE_XFEXT:
 			err = parser.parseXfExt(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+		case XLS_TYPE_STYLE:
+			err = parser.parseStyle(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+		case XLS_TYPE_PALETTE:
+			err = parser.parsePalette(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+		case XLS_TYPE_SHEET:
+			sheet, err := parser.parseSheet(book.workbook)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Printf("sheet: %v\n", sheet)
+			// bookSheets = append(bookSheets, *sheet)
+		case XLS_TYPE_EXTERNALBOOK:
+			err := parser.parseExternalBook(book.workbook)
 			if err != nil {
 				return nil, err
 			}

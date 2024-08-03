@@ -19,6 +19,9 @@ type xlsBookParser struct {
 	xfCellStyleArr []xlsStyleInfo
 	xfCellMap      map[uint16]xlsStyleInfo
 	xfCellStyleMap map[uint16]xlsStyleInfo
+	palette        []string
+
+	externalBooks []xlsExternalBook
 
 	xfIndex int
 
@@ -36,6 +39,7 @@ func newParser() *xlsBookParser {
 		xfCellStyleArr: make([]xlsStyleInfo, 0),
 		xfCellMap:      make(map[uint16]xlsStyleInfo),
 		xfCellStyleMap: map[uint16]xlsStyleInfo{},
+		palette:        make([]string, 0),
 	}
 }
 
@@ -837,6 +841,139 @@ func (parser *xlsBookParser) parseXfExt(workbook []byte) error {
 
 	return nil
 }
+
+func (parser *xlsBookParser) parseStyle(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	if !parser.isReadDataOnly {
+		// offset: 0; size: 2; index to XF record and flag for built-in style
+		ixfe, err := readUInt2(recordData, 2)
+		if err != nil {
+			return err
+		}
+		// bit: 11-0; mask 0x0FFF; index to XF record
+		xfIndex := (0x0FFF & ixfe) >> 0
+
+		// bit: 15; mask 0x8000; 0 = user-defined style, 1 = built-in style
+		isBuildIn := (0x8000 & ixfe) >> 15
+		fmt.Printf("parseStyle xfIndex: %d isBuildIn: %d \n", xfIndex, isBuildIn)
+		if isBuildIn > 0 {
+			buildInId := recordData[2]
+			fmt.Printf("parseStyle buildInId: %d\n", buildInId)
+			switch buildInId {
+			case 0x00:
+				// currently, we are not using this for anything
+			default:
+				// 没用到，就读了下。
+			}
+			// user-defined; not supported by PhpSpreadsheet
+		}
+	}
+	return nil
+}
+
+func (parser *xlsBookParser) parsePalette(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	parser.pos += 4 + int32(length)
+
+	if !parser.isReadDataOnly {
+		// offset: 0; size: 2; number of following colors
+		nm, err := readUInt2(recordData, 0)
+		if err != nil {
+			return err
+		}
+		// list of RGB colors
+		for i := uint16(0); i < nm; i++ {
+			j := 2 + 4*i
+			rgb := recordData[j : j+4]
+			parser.palette = append(parser.palette, readRGB(rgb))
+		}
+		fmt.Printf("parsePalette %v\n", parser.palette)
+	}
+	return nil
+}
+
+func (parser *xlsBookParser) parseExternalBook(workbook []byte) error {
+	length, err := readUInt2(workbook, parser.pos+2)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("parseExternalBook length %d\n", length)
+	recordData, err := parser.parseRecordData(workbook, parser.pos+4, int32(length))
+	if err != nil {
+		return err
+	}
+	offset := uint16(0)
+	if length > 4 {
+		// offset: 0; size: 2; number of sheet names ($nm)
+		nm, err := readUInt2(recordData, 0)
+		if err != nil {
+			return err
+		}
+
+		// offset: 2; size: var; encoded URL without sheet name (Unicode string, 16-bit length)
+		encodeUrlString, size, err := ReadUnicodeStringLong(recordData[2:])
+		if err != nil {
+			return err
+		}
+		offset += size
+
+		externalSheetNames := []string{}
+		for i := uint16(0); i < nm; i++ {
+			externalSheetName, s, err := ReadUnicodeStringLong(recordData[offset:])
+			if err != nil {
+				return err
+			}
+			externalSheetNames = append(externalSheetNames, string(externalSheetName))
+			offset += s
+		}
+		parser.externalBooks = append(parser.externalBooks, xlsExternalBook{
+			Type:               XLS_EXTERNAL_BOOK_TYPE_EXTERNAL,
+			EncodedUrl:         string(encodeUrlString),
+			ExternalSheetNames: externalSheetNames,
+		})
+	} else if recordData[2] == 0x01 && recordData[3] == 0x04 {
+		// internal reference
+		// offset: 0; size: 2; number of sheet in this document
+		// offset: 2; size: 2; 0x01 0x04
+		parser.externalBooks = append(parser.externalBooks, xlsExternalBook{
+			Type: XLS_EXTERNAL_BOOK_TYPE_INTERNAL,
+		})
+	} else if (recordData[0] == 0x00) && (recordData[1] == 0x01) && (recordData[2] == 0x01) && (recordData[3] == 0x3A) {
+		// add-in function
+		// offset: 0; size: 2; 0x0001
+		parser.externalBooks = append(parser.externalBooks, xlsExternalBook{
+			Type: XLS_EXTERNAL_BOOK_TYPE_ADD_IN_FUNC,
+		})
+	} else if recordData[0] == 0x00 && recordData[1] == 0x00 {
+		// DDE links, OLE links
+		// offset: 0; size: 2; 0x0000
+		// offset: 2; size: var; encoded source document name
+		parser.externalBooks = append(parser.externalBooks, xlsExternalBook{
+			Type: XLS_EXTERNAL_BOOK_TYPE_DDE_OR_OLE,
+		})
+	} else {
+		fmt.Printf("parseExternalBook unknown type %v\n", recordData[0:4])
+	}
+	return nil
+}
+
+//TODO
 
 func (parser *xlsBookParser) parseFilepass(workbook []byte) error {
 	length, err := readUInt2(workbook, parser.pos+2)

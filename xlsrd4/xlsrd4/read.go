@@ -121,3 +121,7 @@ func readUtf8FromUtf16Le(source []byte, compressed bool) ([]byte, error) {
 	result, _, err := transform.Bytes(unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM).NewDecoder(), source)
 	return result, err
 }
+
+func readRGB(rgb []byte) string {
+	return fmt.Sprintf("%02X%02X%02X", rgb[0], rgb[1], rgb[2])
+}
